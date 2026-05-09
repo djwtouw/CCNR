@@ -1,13 +1,14 @@
-PKG_CPPFLAGS = -Ilibrary/include
+PKG_CPPFLAGS = -Iccncpp/include
 
-SOURCES = \
-    RcppExports.cpp \
-    rcppeigen_hello_world.cpp \
-    library/src/square.cpp
+CCNCPP_SRC = \
+    ccncpp/src/cc_network.cpp \
+    ccncpp/src/cc_sequential.cpp \
+    ccncpp/src/ccn_components.cpp \
+    ccncpp/src/loss_components.cpp
 
-OBJECTS = $(SOURCES:.cpp=.o)
 
-all: $(SHLIB)
+CCNCPP_OBJ = $(CCNCPP_SRC:.cpp=.o)
 
-$(SHLIB): $(OBJECTS)
-	$(SHLIB_CXXLD) $(SHLIB_LDFLAGS) -o $@ $(OBJECTS) $(ALL_LIBS)
+OBJECTS = $(CCNCPP_OBJ) \
+          RcppExports.o \
+          ccn_wrapper.o

@@ -11,55 +11,44 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// rcppeigen_hello_world
-Eigen::MatrixXd rcppeigen_hello_world();
-RcppExport SEXP _CCNR_rcppeigen_hello_world() {
+// ccn_fit
+Rcpp::List ccn_fit(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const Eigen::VectorXd& params_vec, double q, double alpha, double c1, double c2, double tol, std::string loss_type, double heaviside_k, double heaviside_t);
+RcppExport SEXP _CCNR_ccn_fit(SEXP XSEXP, SEXP YSEXP, SEXP params_vecSEXP, SEXP qSEXP, SEXP alphaSEXP, SEXP c1SEXP, SEXP c2SEXP, SEXP tolSEXP, SEXP loss_typeSEXP, SEXP heaviside_kSEXP, SEXP heaviside_tSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcppeigen_hello_world());
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type params_vec(params_vecSEXP);
+    Rcpp::traits::input_parameter< double >::type q(qSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type c1(c1SEXP);
+    Rcpp::traits::input_parameter< double >::type c2(c2SEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< std::string >::type loss_type(loss_typeSEXP);
+    Rcpp::traits::input_parameter< double >::type heaviside_k(heaviside_kSEXP);
+    Rcpp::traits::input_parameter< double >::type heaviside_t(heaviside_tSEXP);
+    rcpp_result_gen = Rcpp::wrap(ccn_fit(X, Y, params_vec, q, alpha, c1, c2, tol, loss_type, heaviside_k, heaviside_t));
     return rcpp_result_gen;
 END_RCPP
 }
-// rcppeigen_outerproduct
-Eigen::MatrixXd rcppeigen_outerproduct(const Eigen::VectorXd& x);
-RcppExport SEXP _CCNR_rcppeigen_outerproduct(SEXP xSEXP) {
+// ccn_predict
+Eigen::MatrixXd ccn_predict(const Eigen::MatrixXd& X, const Eigen::VectorXd& params_vec, int L);
+RcppExport SEXP _CCNR_ccn_predict(SEXP XSEXP, SEXP params_vecSEXP, SEXP LSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcppeigen_outerproduct(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rcppeigen_innerproduct
-double rcppeigen_innerproduct(const Eigen::VectorXd& x);
-RcppExport SEXP _CCNR_rcppeigen_innerproduct(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcppeigen_innerproduct(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rcppeigen_bothproducts
-Rcpp::List rcppeigen_bothproducts(const Eigen::VectorXd& x);
-RcppExport SEXP _CCNR_rcppeigen_bothproducts(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcppeigen_bothproducts(x));
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type params_vec(params_vecSEXP);
+    Rcpp::traits::input_parameter< int >::type L(LSEXP);
+    rcpp_result_gen = Rcpp::wrap(ccn_predict(X, params_vec, L));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CCNR_rcppeigen_hello_world", (DL_FUNC) &_CCNR_rcppeigen_hello_world, 0},
-    {"_CCNR_rcppeigen_outerproduct", (DL_FUNC) &_CCNR_rcppeigen_outerproduct, 1},
-    {"_CCNR_rcppeigen_innerproduct", (DL_FUNC) &_CCNR_rcppeigen_innerproduct, 1},
-    {"_CCNR_rcppeigen_bothproducts", (DL_FUNC) &_CCNR_rcppeigen_bothproducts, 1},
+    {"_CCNR_ccn_fit", (DL_FUNC) &_CCNR_ccn_fit, 11},
+    {"_CCNR_ccn_predict", (DL_FUNC) &_CCNR_ccn_predict, 3},
     {NULL, NULL, 0}
 };
 

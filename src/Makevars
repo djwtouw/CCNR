@@ -1,13 +1,1 @@
 PKG_CPPFLAGS = -I$(srcdir)/library/include
-PKG_LIBS =
-
-# Include your library source files explicitly
-SOURCES = $(wildcard $(srcdir)/*.cpp) \
-           $(wildcard $(srcdir)/library/src/*.cpp)
-
-OBJECTS = $(SOURCES:.cpp=.o)
-
-all: $(SHLIB)
-
-$(SHLIB): $(OBJECTS)
-    $(SHLIB_CXXLD) $(SHLIB_LDFLAGS) -o $@ $(OBJECTS) $(ALL_LIBS)

@@ -1,4 +1,5 @@
 .Rproj.user
+*.Rproj
 .Rhistory
 .RData
 .Ruserdata
@@ -6,3 +7,6 @@
 src/*.o
 src/*.so
 src/*.dll
+src/ccncpp/*.o
+src/ccncpp/*.so
+src/ccncpp/*.dll

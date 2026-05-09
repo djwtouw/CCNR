@@ -8,4 +8,6 @@ Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
 Imports: Rcpp (>= 1.0.9)
+Suggests: MASS
 LinkingTo: Rcpp, RcppEigen
+Config/roxygen2/version: 8.0.0
