@@ -1,0 +1,3 @@
+useDynLib(CCNR)
+importFrom(Rcpp, evalCpp)
+export("rcppeigen_hello_world")

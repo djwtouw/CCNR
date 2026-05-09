@@ -1,0 +1,13 @@
+PKG_CPPFLAGS = -Ilibrary/include
+
+SOURCES = \
+    RcppExports.cpp \
+    rcppeigen_hello_world.cpp \
+    library/src/square.cpp
+
+OBJECTS = $(SOURCES:.cpp=.o)
+
+all: $(SHLIB)
+
+$(SHLIB): $(OBJECTS)
+	$(SHLIB_CXXLD) $(SHLIB_LDFLAGS) -o $@ $(OBJECTS) $(ALL_LIBS)
