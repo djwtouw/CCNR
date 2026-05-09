@@ -28,7 +28,6 @@
 #'
 #' @export
 generate_dataset <- function(n) {
-
     if (!is.numeric(n) || length(n) != 1 || n <= 0) {
         stop("'n' must be a positive integer.")
     }
@@ -52,16 +51,12 @@ generate_dataset <- function(n) {
     Y <- matrix(0.0, nrow = nrow(X), ncol = 4)
 
     for (i in seq_len(ncol(Y))) {
-
         beta <- stats::runif(ncol(X), min = -2, max = 2)
-
         eta <- X %*% beta
 
         if (i > 1) {
             gamma <- stats::runif(i - 1, min = -4, max = 4)
-
-            eta <- eta +
-                Y[, 1:(i - 1), drop = FALSE] %*% gamma
+            eta <- eta + Y[, 1:(i - 1), drop = FALSE] %*% gamma
         }
 
         probs <- 1 / (1 + exp(-eta))

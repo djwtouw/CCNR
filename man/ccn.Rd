@@ -2,20 +2,49 @@
 % Please edit documentation in R/ccn.R
 \name{ccn}
 \alias{ccn}
-\title{Fit a mymodel}
+\title{Fit a Classifier Chain Network}
 \usage{
-ccn(x, y, q, lambda, conv_tol = 1e-06)
+ccn(
+  x,
+  y,
+  q,
+  lambda,
+  conv_tol = 1e-06,
+  n_starts = 1L,
+  params_init = NULL,
+  restart_scale = 0.1
+)
 }
 \arguments{
-\item{x}{A numeric matrix of predictors.}
+\item{x}{A numeric matrix of predictors (n x m).}
 
-\item{y}{A numeric vector of responses.}
+\item{y}{A numeric matrix of binary responses (n x L).}
 
-\item{...}{Additional arguments passed to the C routine.}
+\item{q}{Numeric; exponent of the per-observation Lq norm used to aggregate
+label losses, must be \eqn{\geq 1}. Given per-label losses \eqn{h_{il}}, the
+per-observation loss is \eqn{\left(\sum_l h_{il}^q\right)^{1/q}}. When
+\code{q = 1} all labels contribute equally. As \code{q} increases, larger
+label losses receive disproportionately more weight. As \code{q}
+\eqn{\to \infty} this approaches the infinity norm, where only the
+worst-predicted label drives the loss.}
+
+\item{lambda}{Non-negative numeric; regularization penalty.}
+
+\item{conv_tol}{Convergence tolerance for the optimizer. Default 1e-6.}
+
+\item{n_starts}{Number of random restarts. The start with the lowest loss
+is returned. The first start always uses \code{params_init}. Default 5.}
+
+\item{params_init}{Optional numeric vector of initial parameter values.
+Length must equal \code{L + m*L + (L*L - L)/2}. Defaults to all zeros.}
+
+\item{restart_scale}{Standard deviation of the normal distribution used to
+generate random starting values for restarts 2 through \code{n_starts}.
+Ignored when \code{n_starts = 1}. Default \code{0.1}.}
 }
 \value{
-An object of class \code{"mymodel"}.
+An object of class \code{"ccn"}.
 }
 \description{
-Fit a mymodel
+Fit a Classifier Chain Network
 }
