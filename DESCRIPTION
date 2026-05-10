@@ -4,7 +4,8 @@ Title: Classifier Chain Network for Multi-Label Classification
 Version: 0.1.0
 Encoding: UTF-8
 Date: 2026-05-10
-Author: Who wrote it
+Authors@R: person("First", "Last", email = "you@example.com",
+    role = c("aut", "cre"))
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: Fits a Classifier Chain Network (CCN) for multi-label binary
     classification. The model jointly learns label dependencies through a
@@ -16,5 +17,5 @@ Imports: Rcpp (>= 1.0.9)
 Suggests: MASS
 LinkingTo: Rcpp, RcppEigen
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 8.0.0
 Config/roxygen2/version: 8.0.0

@@ -8,3 +8,12 @@
 \description{
 Fits a Classifier Chain Network (CCN) for multi-label binary classification. The model jointly learns label dependencies through a chain structure and optimizes an Lq norm aggregated cross-entropy loss. Provides methods for prediction, model summary, and k-fold cross-validation with grid search over hyperparameters.
 }
+\author{
+\strong{Maintainer}: First Last \email{you@example.com}
+
+Authors:
+\itemize{
+  \item First Last \email{you@example.com}
+}
+
+}
