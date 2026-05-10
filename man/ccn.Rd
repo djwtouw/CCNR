@@ -9,9 +9,9 @@ ccn(
   y,
   q,
   lambda,
+  label_order = NULL,
   conv_tol = 1e-06,
   n_starts = 1L,
-  params_init = NULL,
   restart_scale = 0.1
 )
 }
@@ -30,13 +30,19 @@ worst-predicted label drives the loss.}
 
 \item{lambda}{Non-negative numeric; regularization penalty.}
 
+\item{label_order}{Integer vector of length L specifying the order in which
+labels are chained. Entry \code{label_order[l]} gives the index of the
+original column of \code{y} that occupies position \code{l} in the chain.
+Earlier labels in the chain are used as features when predicting later
+labels. If \code{NULL} (default), the natural column order \code{1:L} is
+used. Outputs are always returned in the original column order of \code{y}.}
+
 \item{conv_tol}{Convergence tolerance for the optimizer. Default 1e-6.}
 
-\item{n_starts}{Number of random restarts. The start with the lowest loss
-is returned. The first start always uses \code{params_init}. Default 5.}
-
-\item{params_init}{Optional numeric vector of initial parameter values.
-Length must equal \code{L + m*L + (L*L - L)/2}. Defaults to all zeros.}
+\item{n_starts}{Number of random restarts; the fit with the lowest training
+loss is returned. The first restart always uses a deterministic
+initialization; subsequent restarts draw from \eqn{N(0, \sigma^2)} where
+\eqn{\sigma} is \code{restart_scale}. Default \code{1}.}
 
 \item{restart_scale}{Standard deviation of the normal distribution used to
 generate random starting values for restarts 2 through \code{n_starts}.

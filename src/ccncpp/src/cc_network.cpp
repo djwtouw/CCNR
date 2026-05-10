@@ -478,6 +478,7 @@ ccn_logistic(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
 
     // Construct the result
     CCNResult result { params1.flatten(), loss1 };
+    Rcpp::Rcout << "\n" << params1.W << "\n";
 
     return result;
 }
@@ -489,7 +490,6 @@ ccn_logistic(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
  * @param X The data matrix, where each column holds the features of a single
  * observation.
  * @param params_vec The initial estimate of the model parameters.
- * @param m The number of variables.
  * @param L The number of labels.
  * @return The prediction.
  */

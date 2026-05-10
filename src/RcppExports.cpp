@@ -32,6 +32,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ccs_fit
+Eigen::VectorXd ccs_fit(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, double alpha, double c1, double c2, double tol, std::string loss_type, double heaviside_k, double heaviside_t);
+RcppExport SEXP _CCNR_ccs_fit(SEXP XSEXP, SEXP ySEXP, SEXP alphaSEXP, SEXP c1SEXP, SEXP c2SEXP, SEXP tolSEXP, SEXP loss_typeSEXP, SEXP heaviside_kSEXP, SEXP heaviside_tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type c1(c1SEXP);
+    Rcpp::traits::input_parameter< double >::type c2(c2SEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< std::string >::type loss_type(loss_typeSEXP);
+    Rcpp::traits::input_parameter< double >::type heaviside_k(heaviside_kSEXP);
+    Rcpp::traits::input_parameter< double >::type heaviside_t(heaviside_tSEXP);
+    rcpp_result_gen = Rcpp::wrap(ccs_fit(X, y, alpha, c1, c2, tol, loss_type, heaviside_k, heaviside_t));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ccn_predict
 Eigen::MatrixXd ccn_predict(const Eigen::MatrixXd& X, const Eigen::VectorXd& params_vec, int L);
 RcppExport SEXP _CCNR_ccn_predict(SEXP XSEXP, SEXP params_vecSEXP, SEXP LSEXP) {
@@ -48,6 +67,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CCNR_ccn_fit", (DL_FUNC) &_CCNR_ccn_fit, 11},
+    {"_CCNR_ccs_fit", (DL_FUNC) &_CCNR_ccs_fit, 9},
     {"_CCNR_ccn_predict", (DL_FUNC) &_CCNR_ccn_predict, 3},
     {NULL, NULL, 0}
 };

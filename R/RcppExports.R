@@ -5,6 +5,10 @@
     .Call(`_CCNR_ccn_fit`, X, Y, params_vec, q, alpha, c1, c2, tol, loss_type, heaviside_k, heaviside_t)
 }
 
+.ccs_fit <- function(X, y, alpha, c1, c2, tol, loss_type, heaviside_k, heaviside_t) {
+    .Call(`_CCNR_ccs_fit`, X, y, alpha, c1, c2, tol, loss_type, heaviside_k, heaviside_t)
+}
+
 .ccn_predict <- function(X, params_vec, L) {
     .Call(`_CCNR_ccn_predict`, X, params_vec, L)
 }
