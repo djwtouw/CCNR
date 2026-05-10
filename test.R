@@ -8,7 +8,15 @@ fit = ccn(X1, Y1, 1, 0.01, label_order = c(4, 1, 3, 2))
 mean((fit$fitted.values - Y1) == 0)
 predict(fit, X1) - fit$fitted.values
 
-
-
 print(fit)
 summary(fit)
+
+coef(fit)
+fitted(fit)
+residuals(fit)
+
+cv <- ccn_cv(
+    x = X1, y = Y1, q = c(1, 1.5, 2), lambda = c(0.01, 0.1, 1.0), seed = 1
+)
+print(cv)
+cv$best_model

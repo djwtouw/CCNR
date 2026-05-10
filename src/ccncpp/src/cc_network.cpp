@@ -478,7 +478,6 @@ ccn_logistic(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
 
     // Construct the result
     CCNResult result { params1.flatten(), loss1 };
-    Rcpp::Rcout << "\n" << params1.W << "\n";
 
     return result;
 }

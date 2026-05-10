@@ -1,13 +1,20 @@
 Package: CCNR
 Type: Package
-Title: What the package does (short line)
-Version: 1.0
-Date: 2025-10-18
+Title: Classifier Chain Network for Multi-Label Classification
+Version: 0.1.0
+Encoding: UTF-8
+Date: 2026-05-10
 Author: Who wrote it
 Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Description: Fits a Classifier Chain Network (CCN) for multi-label binary
+    classification. The model jointly learns label dependencies through a
+    chain structure and optimizes an Lq norm aggregated cross-entropy loss.
+    Provides methods for prediction, model summary, and k-fold
+    cross-validation with grid search over hyperparameters.
+License: GPL-3
 Imports: Rcpp (>= 1.0.9)
 Suggests: MASS
 LinkingTo: Rcpp, RcppEigen
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
 Config/roxygen2/version: 8.0.0

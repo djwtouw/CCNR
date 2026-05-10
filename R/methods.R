@@ -20,6 +20,7 @@ print.ccn <- function(x, ...) {
     invisible(x)
 }
 
+
 #' Summarize a Classifier Chain Network
 #'
 #' @param object A fitted \code{"ccn"} object.
@@ -64,6 +65,7 @@ summary.ccn <- function(object, ...) {
     invisible(object)
 }
 
+
 #' Extract coefficients from a Classifier Chain Network
 #'
 #' @param object A fitted \code{"ccn"} object.
@@ -87,6 +89,7 @@ fitted.ccn <- function(object, type = c("class", "response"), ...) {
     if (type == "response") object$fitted.probs else object$fitted.values
 }
 
+
 #' Extract residuals from a Classifier Chain Network
 #'
 #' Returns the difference between the binary response matrix and the fitted
@@ -97,4 +100,33 @@ fitted.ccn <- function(object, type = c("class", "response"), ...) {
 #' @export
 residuals.ccn <- function(object, ...) {
     object$y - object$fitted.probs
+}
+
+
+#' Print a Classifier Chain Network Cross-validation
+#'
+#' @param x A fitted \code{"ccn_cv"} object.
+#' @param ... Further arguments passed to or from other methods.
+#' @export
+print.ccn_cv <- function(x, ...) {
+    cat("CCN Cross-validation\n")
+    cat("--------------------\n")
+    cat("Folds  :", x$folds, "\n")
+    cat("Grid   :", nrow(x$scores), "hyperparameter combinations\n\n")
+    cat("Best parameters:\n")
+    cat("  q      :", x$best_params$q, "\n")
+    cat("  lambda :", x$best_params$lambda, "\n\n")
+    cat("Full grid results:\n")
+    print(x$scores, row.names = FALSE, digits = 4)
+    invisible(x)
+}
+
+
+#' Summarize a Classifier Chain Network
+#'
+#' @param object A fitted \code{"ccn_cv"} object.
+#' @param ... Further arguments passed to or from other methods.
+#' @export
+summary.ccn_cv <- function(object, ...) {
+    print(object, ...)
 }

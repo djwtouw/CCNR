@@ -4,7 +4,7 @@
 \name{CCNR-package}
 \alias{CCNR}
 \alias{CCNR-package}
-\title{CCNR: What the package does (short line)}
+\title{CCNR: Classifier Chain Network for Multi-Label Classification}
 \description{
-More about what it does (maybe more than one line)
+Fits a Classifier Chain Network (CCN) for multi-label binary classification. The model jointly learns label dependencies through a chain structure and optimizes an Lq norm aggregated cross-entropy loss. Provides methods for prediction, model summary, and k-fold cross-validation with grid search over hyperparameters.
 }

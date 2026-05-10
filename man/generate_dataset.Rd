@@ -12,8 +12,8 @@ generate_dataset(n)
 \value{
 A list with:
 \describe{
-  \item{X}{Numeric matrix of explanatory variables.}
-  \item{Y}{Numeric matrix of binary multilabel outcomes.}
+\item{X}{Numeric matrix of explanatory variables.}
+\item{Y}{Numeric matrix of binary multilabel outcomes.}
 }
 }
 \description{
