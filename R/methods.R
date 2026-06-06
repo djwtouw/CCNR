@@ -2,6 +2,9 @@
 #'
 #' @param x A fitted \code{"ccn"} object.
 #' @param ... Further arguments passed to or from other methods.
+#'
+#' @example inst/doc/examples/example-methods.R
+#'
 #' @export
 print.ccn <- function(x, ...) {
     cat("Classifier Chain Network\n")
@@ -25,6 +28,9 @@ print.ccn <- function(x, ...) {
 #'
 #' @param object A fitted \code{"ccn"} object.
 #' @param ... Further arguments passed to or from other methods.
+#'
+#' @example inst/doc/examples/example-methods.R
+#'
 #' @export
 summary.ccn <- function(object, ...) {
     label_names <- object$label_names %||% paste0("L", seq_len(object$dims$L))
@@ -72,6 +78,9 @@ summary.ccn <- function(object, ...) {
 #' @param ... Further arguments passed to or from other methods.
 #' @return A list with elements \code{b} (intercepts), \code{W} (predictor
 #' weights), and \code{C} (chain weights).
+#'
+#' @example inst/doc/examples/example-methods.R
+#'
 #' @export
 coef.ccn <- function(object, ...) {
     object$coefficients
@@ -83,6 +92,11 @@ coef.ccn <- function(object, ...) {
 #' @param type Character; \code{"class"} (default) returns binary predictions,
 #' \code{"response"} returns probabilities.
 #' @param ... Further arguments passed to or from other methods.
+#' @return An n x L matrix of fitted values in the original column order of
+#' \code{y}.
+#'
+#' @example inst/doc/examples/example-methods.R
+#'
 #' @export
 fitted.ccn <- function(object, type = c("class", "response"), ...) {
     type <- match.arg(type)
@@ -97,6 +111,11 @@ fitted.ccn <- function(object, type = c("class", "response"), ...) {
 #'
 #' @param object A fitted \code{"ccn"} object.
 #' @param ... Further arguments passed to or from other methods.
+#' @return An n x L numeric matrix of response residuals (\code{y - fitted
+#' probabilities}) in the original column order of \code{y}.
+#'
+#' @example inst/doc/examples/example-methods.R
+#'
 #' @export
 residuals.ccn <- function(object, ...) {
     object$y - object$fitted.probs
@@ -107,6 +126,9 @@ residuals.ccn <- function(object, ...) {
 #'
 #' @param x A fitted \code{"ccn_cv"} object.
 #' @param ... Further arguments passed to or from other methods.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
 #' @export
 print.ccn_cv <- function(x, ...) {
     cat("CCN Cross-validation\n")
@@ -122,11 +144,55 @@ print.ccn_cv <- function(x, ...) {
 }
 
 
-#' Summarize a Classifier Chain Network
+#' Summarize Classifier Chain Network Cross-Validation Results
 #'
 #' @param object A fitted \code{"ccn_cv"} object.
 #' @param ... Further arguments passed to or from other methods.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
 #' @export
 summary.ccn_cv <- function(object, ...) {
     print(object, ...)
+}
+
+
+#' Extract Coefficients from a Cross-validated Classifier Chain Network
+#'
+#' Extracts the coefficients of the best model selected by cross-validation.
+#' Equivalent to calling \code{\link{coef.ccn}} on \code{object$best_model}.
+#'
+#' @param object A fitted \code{"ccn_cv"} object.
+#' @param ... Further arguments passed to \code{\link{coef.ccn}}.
+#' @return A list with elements \code{b} (intercepts), \code{W} (predictor
+#' weights), and \code{C} (chain weights).
+#' @seealso \code{\link{ccn_cv}}, \code{\link{coef.ccn}}.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
+#' @export
+coef.ccn_cv <- function(object, ...) {
+    coef(object$best_model, ...)
+}
+
+
+#' Extract Fitted Values from a Cross-validated Classifier Chain Network
+#'
+#' Extracts the fitted values of the best model selected by cross-validation,
+#' which is refitted on the full data. Equivalent to calling
+#' \code{\link{fitted.ccn}} on \code{object$best_model}.
+#'
+#' @param object A fitted \code{"ccn_cv"} object.
+#' @param type Character; \code{"class"} (default) returns binary predictions,
+#' \code{"response"} returns probabilities.
+#' @param ... Further arguments passed to \code{\link{fitted.ccn}}.
+#' @return An n x L matrix of fitted values in the original column order of
+#' \code{y}.
+#' @seealso \code{\link{ccn_cv}}, \code{\link{fitted.ccn}}.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
+#' @export
+fitted.ccn_cv <- function(object, type = c("class", "response"), ...) {
+    fitted(object$best_model, type = type, ...)
 }

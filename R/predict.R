@@ -10,9 +10,14 @@
 #' class predictions. Either a scalar applied to all labels or a vector of
 #' length L for per-label thresholds. Default \code{0.5}. Ignored when
 #' \code{type = "response"}.
+#' @param ... Further arguments passed to or from other methods.
 #'
 #' @return An n x L matrix of predictions, in the original column order of
 #' \code{y} used during training.
+#' @seealso \code{\link{ccn}} for fitting a model.
+#'
+#' @example inst/doc/examples/example-predict.ccn.R
+#'
 #' @export
 predict.ccn <- function(object, newdata = NULL, type = c("class", "response"),
                         threshold = 0.5, ...) {
@@ -58,4 +63,36 @@ predict.ccn <- function(object, newdata = NULL, type = c("class", "response"),
     } else {
         sweep(probs, 2, threshold, ">=") * 1L
     }
+}
+
+
+#' Predict from a Cross-validated Classifier Chain Network
+#'
+#' Computes predictions from the best model selected by cross-validation.
+#' Equivalent to calling \code{\link{predict.ccn}} on \code{object$best_model}.
+#'
+#' @param object A fitted \code{"ccn_cv"} object.
+#' @param newdata Numeric matrix of predictors (n x m). If \code{NULL}, returns
+#' the fitted values from training.
+#' @param type Character; the type of prediction. \code{"class"} (default)
+#' returns a binary 0/1 matrix. \code{"response"} returns predicted
+#' probabilities.
+#' @param threshold Numeric; decision threshold for converting probabilities to
+#' class predictions. Either a scalar applied to all labels or a vector of
+#' length L for per-label thresholds. Default \code{0.5}. Ignored when
+#' \code{type = "response"}.
+#' @param ... Further arguments passed to \code{\link{predict.ccn}}.
+#'
+#' @return An n x L matrix of predictions, in the original column order of
+#' \code{y} used during training.
+#' @seealso \code{\link{ccn_cv}}, \code{\link{predict.ccn}}.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
+#' @export
+predict.ccn_cv <- function(object, newdata = NULL,
+                           type = c("class", "response"), threshold = 0.5,
+                           ...) {
+    predict(object$best_model, newdata = newdata, type = type,
+            threshold = threshold, ...)
 }

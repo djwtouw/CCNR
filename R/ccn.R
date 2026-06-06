@@ -26,6 +26,13 @@
 #' Ignored when \code{n_starts = 1}. Default \code{0.1}.
 #'
 #' @return An object of class \code{"ccn"}.
+#' @seealso \code{\link{predict.ccn}}, \code{\link{summary.ccn}},
+#' \code{\link{coef.ccn}}, \code{\link{fitted.ccn}},
+#' \code{\link{residuals.ccn}}, \code{\link{ccn_cv}} for hyperparameter
+#' selection via cross-validation.
+#'
+#' @example inst/doc/examples/example-ccn.R
+#'
 #' @export
 ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
                 n_starts = 1L, restart_scale = 0.1) {
@@ -43,6 +50,7 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
     if (!is.numeric(y))          stop("y must be numeric")
     if (any(is.na(x)))           stop("x contains missing values")
     if (any(is.na(y)))           stop("y contains missing values")
+    if (!all(y %in% c(0, 1)))    stop("y must contain only 0 and 1")
     if (q < 1)                   stop("q must be at least 1")
     if (lambda < 0)              stop("lambda must be non-negative")
     if (!is.numeric(restart_scale) ||
@@ -83,7 +91,7 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
         }
 
         fit_l <- tryCatch(
-            CCNR:::.ccs_fit(
+            .ccs_fit(
                 t(x_ccs), t(y), lambda, wolfe_1, wolfe_2, conv_tol,
                 "cross_entropy", 0.0, 0.0
             ),
@@ -112,7 +120,7 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
     starts[[1]] <- base_init
     if (n_starts > 1L) {
         for (i in seq(2, n_starts)) {
-            starts[[i]] <- rnorm(n_params, mean = 0, sd = restart_scale)
+            starts[[i]] <- stats::rnorm(n_params, mean = 0, sd = restart_scale)
         }
     }
 
@@ -171,6 +179,7 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
     # Restore original label order
     inv_order    <- order(label_order)
     fitted_probs <- fitted_probs[, inv_order, drop = FALSE]
+    if (!is.null(label_names)) colnames(fitted_probs) <- label_names
 
     ## Assemble S3 object
     structure(

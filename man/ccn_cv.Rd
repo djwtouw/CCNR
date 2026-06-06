@@ -37,7 +37,7 @@ using \code{seed}.}
 
 \item{scoring}{A function with signature \code{function(y_true, y_class,
 y_prob)} returning a single numeric value. Higher values are assumed to be
-better. Defaults to \code{link{ccn_hamming_accuracy}}.}
+better. Defaults to \code{\link{ccn_hamming_accuracy}}.}
 
 \item{seed}{Integer; random seed for fold generation. Ignored if
 \code{fold_assignments} is provided. Default \code{NULL}.}
@@ -63,9 +63,52 @@ fold, for reproducibility and comparison with other methods.}
 Performs k-fold cross-validation over a grid of hyperparameters, returning
 the best model refitted on the full data.
 }
+\examples{
+# Generate sample data
+set.seed(2)
+data <- generate_dataset(n = 200)
+
+# Cross-validate over a small hyperparameter grid
+cv <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+             folds = 3, seed = 1)
+cv
+
+# Best hyperparameters and the model refitted on the full data
+cv$best_params
+cv$best_model
+
+# Predict directly from the cross-validation object (uses the best model)
+head(predict(cv, newdata = data$X))
+head(predict(cv, newdata = data$X, type = "response"))
+
+# Coefficients and fitted values of the best model
+coef(cv)
+head(fitted(cv))
+
+# Use a different built-in scoring function for hyperparameter selection
+cv_f1 <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+                folds = 3, seed = 1, scoring = ccn_macro_f1)
+cv_f1$best_params
+
+# Use a custom scoring function: it must accept the arguments y_true,
+# y_class, and y_prob and return a single number, where higher is better.
+# This one rewards predicted probabilities that are close to the true labels
+soft_accuracy <- function(y_true, y_class, y_prob) {
+    mean(1 - abs(y_true - y_prob))
+}
+cv_custom <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+                    folds = 3, seed = 1, scoring = soft_accuracy)
+cv_custom$best_params
+
+# Reuse fold assignments for a fair comparison between settings
+cv_reuse <- ccn_cv(x = data$X, y = data$Y, q = 1, lambda = c(0.01, 0.1),
+                   fold_assignments = cv$fold_assignments)
+cv_reuse$best_params
+}
 \seealso{
 \code{\link{ccn_hamming_accuracy}}, \code{\link{ccn_exact_match}},
 \code{\link{ccn_mean_auc}}, \code{\link{ccn_log_likelihood}},
 \code{\link{ccn_micro_f1}}, \code{\link{ccn_macro_f1}} for built-in scoring
-functions.
+functions; \code{\link{predict.ccn_cv}}, \code{\link{coef.ccn_cv}},
+\code{\link{fitted.ccn_cv}} for working with the best model.
 }

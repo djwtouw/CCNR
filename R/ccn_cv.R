@@ -17,7 +17,7 @@
 #' using \code{seed}.
 #' @param scoring A function with signature \code{function(y_true, y_class,
 #' y_prob)} returning a single numeric value. Higher values are assumed to be
-#' better. Defaults to \code{link{ccn_hamming_accuracy}}.
+#' better. Defaults to \code{\link{ccn_hamming_accuracy}}.
 #' @param seed Integer; random seed for fold generation. Ignored if
 #' \code{fold_assignments} is provided. Default \code{NULL}.
 #' @param ... Additional arguments passed to \code{\link{ccn}}.
@@ -38,7 +38,11 @@
 #' @seealso \code{\link{ccn_hamming_accuracy}}, \code{\link{ccn_exact_match}},
 #' \code{\link{ccn_mean_auc}}, \code{\link{ccn_log_likelihood}},
 #' \code{\link{ccn_micro_f1}}, \code{\link{ccn_macro_f1}} for built-in scoring
-#' functions.
+#' functions; \code{\link{predict.ccn_cv}}, \code{\link{coef.ccn_cv}},
+#' \code{\link{fitted.ccn_cv}} for working with the best model.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
 #' @export
 ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                    scoring = ccn_hamming_accuracy, seed = NULL, ...) {
@@ -52,6 +56,7 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
     if (!is.numeric(y))        stop("y must be numeric")
     if (any(is.na(x)))         stop("x contains missing values")
     if (any(is.na(y)))         stop("y contains missing values")
+    if (!all(y %in% c(0, 1)))  stop("y must contain only 0 and 1")
     if (!is.numeric(q) || any(q < 1))
         stop("all values of q must be >= 1")
     if (!is.numeric(lambda) || any(lambda < 0))
@@ -122,7 +127,7 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
             q          = q_g,
             lambda     = lambda_g,
             mean_score = mean(fold_scores, na.rm = TRUE),
-            sd_score   = sd(fold_scores,   na.rm = TRUE)
+            sd_score   = stats::sd(fold_scores, na.rm = TRUE)
         )
     }
 
@@ -161,6 +166,9 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
 #' by this function but required by the scoring interface.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
+#'
+#' @example inst/doc/examples/example-scoring.R
+#'
 #' @export
 ccn_hamming_accuracy <- function(y_true, y_class, y_prob) {
     mean(y_true == y_class)
@@ -180,6 +188,9 @@ ccn_hamming_accuracy <- function(y_true, y_class, y_prob) {
 #' by this function but required by the scoring interface.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
+#'
+#' @example inst/doc/examples/example-scoring.R
+#'
 #' @export
 ccn_exact_match <- function(y_true, y_class, y_prob) {
     mean(rowSums(y_true != y_class) == 0)
@@ -200,6 +211,9 @@ ccn_exact_match <- function(y_true, y_class, y_prob) {
 #' taking the log to avoid \code{-Inf}. Default \code{1e-15}.
 #' @return A single numeric value; less negative values are better.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
+#'
+#' @example inst/doc/examples/example-scoring.R
+#'
 #' @export
 ccn_log_likelihood <- function(y_true, y_class, y_prob, eps = 1e-15) {
     y_prob <- pmax(pmin(y_prob, 1 - eps), eps)
@@ -220,6 +234,9 @@ ccn_log_likelihood <- function(y_true, y_class, y_prob, eps = 1e-15) {
 #' by this function but required by the scoring interface.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
+#'
+#' @example inst/doc/examples/example-scoring.R
+#'
 #' @export
 ccn_micro_f1 <- function(y_true, y_class, y_prob) {
     tp <- sum(y_true == 1 & y_class == 1)
@@ -240,6 +257,9 @@ ccn_micro_f1 <- function(y_true, y_class, y_prob) {
 #' by this function but required by the scoring interface.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
+#'
+#' @example inst/doc/examples/example-scoring.R
+#'
 #' @export
 ccn_macro_f1 <- function(y_true, y_class, y_prob) {
     L <- ncol(y_true)
@@ -264,6 +284,9 @@ ccn_macro_f1 <- function(y_true, y_class, y_prob) {
 #' @param y_prob A numeric matrix of predicted probabilities (n x L).
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
+#'
+#' @example inst/doc/examples/example-scoring.R
+#'
 #' @export
 ccn_mean_auc <- function(y_true, y_class, y_prob) {
     L <- ncol(y_true)

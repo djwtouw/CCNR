@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{summary.ccn_cv}
 \alias{summary.ccn_cv}
-\title{Summarize a Classifier Chain Network}
+\title{Summarize Classifier Chain Network Cross-Validation Results}
 \usage{
 \method{summary}{ccn_cv}(object, ...)
 }
@@ -12,5 +12,47 @@
 \item{...}{Further arguments passed to or from other methods.}
 }
 \description{
-Summarize a Classifier Chain Network
+Summarize Classifier Chain Network Cross-Validation Results
+}
+\examples{
+# Generate sample data
+set.seed(2)
+data <- generate_dataset(n = 200)
+
+# Cross-validate over a small hyperparameter grid
+cv <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+             folds = 3, seed = 1)
+cv
+
+# Best hyperparameters and the model refitted on the full data
+cv$best_params
+cv$best_model
+
+# Predict directly from the cross-validation object (uses the best model)
+head(predict(cv, newdata = data$X))
+head(predict(cv, newdata = data$X, type = "response"))
+
+# Coefficients and fitted values of the best model
+coef(cv)
+head(fitted(cv))
+
+# Use a different built-in scoring function for hyperparameter selection
+cv_f1 <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+                folds = 3, seed = 1, scoring = ccn_macro_f1)
+cv_f1$best_params
+
+# Use a custom scoring function: it must accept the arguments y_true,
+# y_class, and y_prob and return a single number, where higher is better.
+# This one rewards predicted probabilities that are close to the true labels
+soft_accuracy <- function(y_true, y_class, y_prob) {
+    mean(1 - abs(y_true - y_prob))
+}
+cv_custom <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+                    folds = 3, seed = 1, scoring = soft_accuracy)
+cv_custom$best_params
+
+# Reuse fold assignments for a fair comparison between settings
+cv_reuse <- ccn_cv(x = data$X, y = data$Y, q = 1, lambda = c(0.01, 0.1),
+                   fold_assignments = cv$fold_assignments)
+cv_reuse$best_params
 }

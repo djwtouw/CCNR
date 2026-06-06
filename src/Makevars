@@ -1,1 +1,13 @@
-PKG_CPPFLAGS = -I$(srcdir)/library/include
+PKG_CPPFLAGS = -Iccncpp/include
+
+CCNCPP_SRC = \
+    ccncpp/src/cc_network.cpp \
+    ccncpp/src/cc_sequential.cpp \
+    ccncpp/src/ccn_components.cpp \
+    ccncpp/src/loss_components.cpp
+
+CCNCPP_OBJ = $(CCNCPP_SRC:.cpp=.o)
+
+OBJECTS = $(CCNCPP_OBJ) \
+          RcppExports.o \
+          ccn_wrapper.o

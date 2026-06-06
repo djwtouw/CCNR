@@ -26,6 +26,8 @@ probabilities.}
 class predictions. Either a scalar applied to all labels or a vector of
 length L for per-label thresholds. Default \code{0.5}. Ignored when
 \code{type = "response"}.}
+
+\item{...}{Further arguments passed to or from other methods.}
 }
 \value{
 An n x L matrix of predictions, in the original column order of
@@ -33,4 +35,29 @@ An n x L matrix of predictions, in the original column order of
 }
 \description{
 Predict from a Classifier Chain Network
+}
+\examples{
+# Generate sample data and split into training and test sets
+set.seed(2)
+data <- generate_dataset(n = 250)
+train <- 1:200
+
+# Fit a classifier chain network on the training data
+fit <- ccn(x = data$X[train, ], y = data$Y[train, ], q = 1, lambda = 0.01)
+
+# Predicted classes and probabilities for the test data
+x_test <- data$X[-train, ]
+head(predict(fit, newdata = x_test))
+head(predict(fit, newdata = x_test, type = "response"))
+
+# Without newdata, predictions for the training data are returned
+head(predict(fit))
+
+# Custom decision threshold, either a scalar for all labels or one
+# threshold per label
+head(predict(fit, newdata = x_test, threshold = 0.3))
+head(predict(fit, newdata = x_test, threshold = c(0.3, 0.5, 0.5, 0.7)))
+}
+\seealso{
+\code{\link{ccn}} for fitting a model.
 }

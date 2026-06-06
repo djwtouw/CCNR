@@ -12,28 +12,31 @@ generate_dataset(n)
 \value{
 A list with:
 \describe{
-\item{X}{Numeric matrix of explanatory variables.}
-\item{Y}{Numeric matrix of binary multilabel outcomes.}
+\item{X}{Numeric matrix of explanatory variables (\eqn{n \times 3}).}
+\item{Y}{Binary integer matrix of multilabel outcomes (\eqn{n \times 4}).}
 }
 }
 \description{
 Generates correlated explanatory variables and multilabel binary outcomes
-with autoregressive label dependence.
+with label interdependence. The dataset always has \eqn{m = 3} explanatory
+variables and \eqn{L = 4} binary labels.
 }
 \details{
 The explanatory variables are sampled from a multivariate normal
-distribution. Each label is generated using a logistic model with random
-coefficients and optional dependence on previous labels.
+distribution with compound-symmetry covariance (variance 2, covariance
+0.4). Each label is generated using a logistic model with random
+coefficients drawn from \eqn{U(-2, 2)} and optional dependence on all
+previous labels via coefficients drawn from \eqn{U(-4, 4)}.
 }
 \examples{
+# Generate sample data
 set.seed(123)
+data <- generate_dataset(n = 100)
 
-dat <- generate_dataset(100)
+# Explanatory variables (n x 3) and binary labels (n x 4)
+dim(data$X)
+dim(data$Y)
 
-dim(dat$X)
-dim(dat$Y)
-
-head(dat$X)
-head(dat$Y)
-
+head(data$X)
+head(data$Y)
 }

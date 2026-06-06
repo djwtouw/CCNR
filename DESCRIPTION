@@ -3,18 +3,28 @@ Type: Package
 Title: Classifier Chain Network for Multi-Label Classification
 Version: 0.1.0
 Encoding: UTF-8
-Date: 2026-05-10
-Authors@R: person("First", "Last", email = "you@example.com",
-    role = c("aut", "cre"))
-Maintainer: Who to complain to <yourfault@somewhere.net>
+Authors@R: c(person("Daniel J.W.", "Touw",
+             email = "touw@ese.eur.nl",
+             role = c("aut", "cre"),
+             comment = c(ORCID = "0000-0003-3074-5401")),
+      person("Michel", "Van de Velden", role = "ths",
+             comment = c(ORCID = "0000-0002-9807-9057",
+                         "PhD advisor of Daniel J.W. Touw")))
 Description: Fits a Classifier Chain Network (CCN) for multi-label binary
     classification. The model jointly learns label dependencies through a
     chain structure and optimizes an Lq norm aggregated cross-entropy loss.
     Provides methods for prediction, model summary, and k-fold
-    cross-validation with grid search over hyperparameters.
+    cross-validation with grid search over hyperparameters. The methodology
+    is described in Touw and Van de Velden (2025)
+    <doi:10.1016/j.eswa.2025.128048>.
 License: GPL-3
-Imports: Rcpp (>= 1.0.9)
-Suggests: MASS
+Depends: R (>= 4.4.0)
+URL: https://github.com/djwtouw/CCNR
+BugReports: https://github.com/djwtouw/CCNR/issues
+Imports: Rcpp (>= 1.0.9), MASS, stats
+Suggests: testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/build/clean-inst-doc: FALSE
 LinkingTo: Rcpp, RcppEigen
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
