@@ -1,0 +1,15 @@
+bibentry(
+  bibtype = "Article",
+  title   = "Classifier chain networks for multi-label classification",
+  author  = c(person(given = c("Daniel", "J.", "W."),
+                     family = "Touw",
+                     email = "touw@ese.eur.nl"),
+              person(given = "Michel",
+                     family = "Van de Velden")),
+  journal = "Expert Systems with Applications",
+  year    = "2025",
+  volume  = "286",
+  pages   = "128048",
+  doi     = "10.1016/j.eswa.2025.128048",
+  header  = "To cite package CCNR in publications, please use:"
+)
