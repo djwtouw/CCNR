@@ -16,6 +16,13 @@
 #' Earlier labels in the chain are used as features when predicting later
 #' labels. If \code{NULL} (default), the natural column order \code{1:L} is
 #' used. Outputs are always returned in the original column order of \code{y}.
+#'
+#' A function is also accepted, and is called as \code{label_order(x, y)} on
+#' the data supplied to \code{ccn} before fitting; it must return a
+#' permutation of \code{1:L}. This defers the choice of order to fit time, so
+#' that under cross-validation every fold derives its order from its own
+#' training observations. See \code{\link{entropy_label_order}} for ready made
+#' rules and \code{\link{ccn_cv}} for comparing several of them.
 #' @param conv_tol Convergence tolerance for the optimizer. Default 1e-6.
 #' @param n_starts Number of random restarts; the fit with the lowest training
 #' loss is returned. The first restart always uses a deterministic
@@ -67,15 +74,25 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
     # First store the column names of y in unpermuted order
     label_names <- colnames(y)
 
+    # A function is evaluated on the data given to this fit, so the order
+    # follows the observations it is derived from
+    order_source <- "label_order"
+    if (is.function(label_order)) {
+        label_order  <- label_order(x, y)
+        order_source <- "the label_order function"
+        if (is.null(label_order))
+            stop(order_source, " must return a permutation of 1:L")
+    }
+
     # The order is 1..L by default
     if (is.null(label_order)) {
         label_order <- seq_len(L)
     } else {
-        if (!is.integer(label_order)) label_order <- as.integer(label_order)
+        label_order <- suppressWarnings(as.integer(label_order))
         if (length(label_order) != L)
-            stop("label_order must have length L (", L, ")")
-        if (!setequal(label_order, seq_len(L)))
-            stop("label_order must be a permutation of 1:L")
+            stop(order_source, " must have length L (", L, ")")
+        if (anyNA(label_order) || !setequal(label_order, seq_len(L)))
+            stop(order_source, " must be a permutation of 1:L")
     }
 
     y <- y[, label_order, drop = FALSE]

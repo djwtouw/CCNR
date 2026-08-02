@@ -52,6 +52,37 @@ predict(cv, newdata = data$X)
 Runnable example scripts for all exported functions are available in [`inst/doc/examples`](inst/doc/examples) and on the help pages of the package.
 
 
+## Label order
+
+Earlier labels in the chain are used as features for later ones, so the order matters. By default the columns of `y` are chained left to right. A different order can be passed as a permutation, or as a rule that derives one from the data:
+
+```r
+# Pairwise conditional entropies: entry [i, j] is H(y_j | y_i)
+H <- conditional_entropy_matrix(data$Y)
+
+# A chain order derived from those entropies
+order_1 <- entropy_label_order(data$Y, method = "cebcc1")
+fit <- ccn(x = data$X, y = data$Y, q = 1, lambda = 0.01, label_order = order_1)
+```
+
+`entropy_label_order()` implements the orderings of Jun et al. (2019), selected with `method`: `"cebcc1"` (the default, and the best performer in that paper), `"cebcc2"`, `"cebcc3"`, `"cebcc4"`, and `"ebcc"`, which ignores the dependence between labels and sorts by marginal entropy alone.
+
+`label_order` also accepts a function `f(x, y)` returning a permutation, which is evaluated at the start of every fit. Under cross-validation each fold then derives its order from its own training observations, so candidate rules can be compared without the order having seen the validation folds:
+
+```r
+cebcc1_order <- function(x, y) entropy_label_order(y, method = "cebcc1")
+
+cv <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
+             folds = 5, seed = 1,
+             label_order = list(default = NULL, cebcc1 = cebcc1_order))
+cv$scores
+```
+
+Outputs are always returned in the original column order of `y`, whatever the chain order. See [`inst/doc/examples/example-label_order.R`](inst/doc/examples/example-label_order.R) for a fuller walkthrough.
+
+X. Jun, Y. Lu, Z. Lei and D. Guolun (2019). *Conditional entropy based classifier chains for multi-label classification*. Neurocomputing, 335, 185-194. doi: [10.1016/j.neucom.2019.01.039](https://doi.org/10.1016/j.neucom.2019.01.039)
+
+
 ## Correspondence with CCNPy
 
 A Python implementation with the same functionality is available as [CCNPy](https://github.com/djwtouw/CCNPy), which follows the scikit-learn API. The main equivalences are:
@@ -65,6 +96,8 @@ A Python implementation with the same functionality is available as [CCNPy](http
 | `ccn_cv(...)` | `ccn_cv(...)` or `GridSearchCV` |
 | `ccn_hamming_accuracy`, ... | `ccnpy.metrics.*` |
 | `generate_dataset(n)` | `generate_dataset(n)` |
+| `entropy_label_order(y, method)` | `entropy_label_order(Y, method=...)` |
+| `conditional_entropy_matrix(y)` | `conditional_entropy_matrix(Y)` |
 
 The regularization penalty is named `lambda` in R and `alpha` in Python (`lambda` is a reserved word; `alpha` is the scikit-learn convention).
 

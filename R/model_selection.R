@@ -10,17 +10,18 @@
 #' The algorithm is that of Sechidis, Tsoumakas and Vlahavas (2011), "On the
 #' Stratification of Multi-Label Data". Rows are placed one label at a time,
 #' rarest label first, each into the fold that most needs an example of that
-#' label. All ties are broken by lowest index, so the assignment depends only
-#' on the order in which rows are visited; it is stratified either way.
-#' \code{seed = NULL} draws a fresh random order from the current random number
-#' stream (set \code{\link{set.seed}} beforehand for reproducibility); a
-#' \code{seed} gives a reproducible order.
+#' label. Every tie is broken at random, as in the original paper, so repeated
+#' calls give different (equally stratified) assignments. \code{seed = NULL}
+#' draws from the current random number stream (set \code{\link{set.seed}}
+#' beforehand for reproducibility); a \code{seed} gives a reproducible
+#' assignment.
 #'
 #' @param y A numeric matrix of binary responses (n x L), values in
 #' \code{{0, 1}}.
 #' @param folds Positive integer; number of folds. Default \code{5L}.
 #' @param seed Integer or \code{NULL}; random seed controlling the visiting
-#' order. \code{NULL} (default) uses the current random number stream.
+#' order and the tie-breaking. \code{NULL} (default) uses the current random
+#' number stream.
 #'
 #' @return An integer vector of length n assigning each observation to a fold
 #' in \code{1:folds}.
@@ -45,7 +46,8 @@ multilabel_stratified_folds <- function(y, folds = 5L, seed = NULL) {
     if (is.na(k) || k < 2L) stop("folds must be at least 2")
     if (k > n)              stop("folds cannot exceed the number of observations")
 
-    ## Visiting order: a fresh shuffle, or a reproducible one from a seed.
+    ## Visiting order: a fresh shuffle, or a reproducible one from a seed. The
+    ## same stream also drives the random tie-breaking below.
     if (!is.null(seed)) set.seed(seed)
     visit <- sample.int(n)
 
@@ -53,9 +55,14 @@ multilabel_stratified_folds <- function(y, folds = 5L, seed = NULL) {
 }
 
 
-## Core of iterative stratification for an explicit visiting order. Kept
-## separate so that a fixed order (e.g. seq_len(n)) gives a reproducible
-## assignment independent of the random number stream.
+## Pick one of several tied candidates uniformly at random. A single candidate
+## is returned as is, since sample(x) with length(x) == 1 permutes seq_len(x).
+.break_tie <- function(cand) {
+    if (length(cand) == 1L) cand else cand[sample.int(length(cand), 1L)]
+}
+
+
+## Core of iterative stratification for an explicit visiting order.
 .iterative_stratification <- function(y, k, visit) {
     n <- nrow(y)
     L <- ncol(y)
@@ -79,7 +86,7 @@ multilabel_stratified_folds <- function(y, folds = 5L, seed = NULL) {
             ## Only label-free rows are left; spread them by the overall target.
             for (idx in visit) {
                 if (assigned[idx]) next
-                j <- which.max(desired_fold)  # first max = lowest index
+                j <- .break_tie(which(desired_fold == max(desired_fold)))
                 fold[idx] <- j
                 assigned[idx] <- TRUE
                 desired_fold[j] <- desired_fold[j] - 1
@@ -87,19 +94,22 @@ multilabel_stratified_folds <- function(y, folds = 5L, seed = NULL) {
             break
         }
 
-        ## Rarest remaining label first; ties broken by lowest label index.
-        label <- positive[which.min(label_remaining[positive])]
+        ## Rarest remaining label first; ties broken at random.
+        scarce <- label_remaining[positive]
+        label <- .break_tie(positive[scarce == min(scarce)])
 
         for (idx in visit) {
             if (assigned[idx] || y[idx, label] == 0) next
 
+            ## Fold that most needs an example of this label; ties are settled
+            ## by the overall target and any remaining tie at random.
             col <- desired_label_fold[, label]
             cand <- which(col == max(col))
             if (length(cand) > 1) {
                 overall <- desired_fold[cand]
                 cand <- cand[overall == max(overall)]
             }
-            j <- cand[1]
+            j <- .break_tie(cand)
 
             fold[idx] <- j
             assigned[idx] <- TRUE

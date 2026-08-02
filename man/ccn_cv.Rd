@@ -13,6 +13,7 @@ ccn_cv(
   fold_assignments = NULL,
   scoring = ccn_hamming_accuracy,
   seed = NULL,
+  label_order = NULL,
   ...
 )
 }
@@ -43,18 +44,34 @@ better. Defaults to \code{\link{ccn_hamming_accuracy}}.}
 \item{seed}{Integer; random seed for fold generation. Ignored if
 \code{fold_assignments} is provided. Default \code{NULL}.}
 
+\item{label_order}{Candidate chain orders to search over, alongside \code{q}
+and \code{lambda}. A list whose elements are each \code{NULL} (the column
+order of \code{y}), a permutation of \code{1:L}, or a function
+\code{f(x, y)} returning such a permutation. A function is evaluated inside
+every fit, so each fold derives its order from its own training
+observations, which a precomputed permutation cannot do. Element names are
+used to label the results. A single candidate may be passed directly instead
+of wrapped in a list. If \code{NULL} (default), no orders are searched and
+the column order of \code{y} is used. See
+\code{\link{entropy_label_order}} for ready made rules.}
+
 \item{...}{Additional arguments passed to \code{\link{ccn}}.}
 }
 \value{
 An object of class \code{"ccn_cv"} containing:
 \describe{
 \item{best_model}{A \code{"ccn"} object fitted on the full data with the
-best hyperparameters.}
+best hyperparameters. When the winning candidate is a function, it is
+applied to the full data for this refit.}
 \item{best_params}{A one-row data frame with the best \code{q} and
-\code{lambda}.}
+\code{lambda}, and the name of the best \code{label_order} when more than
+one candidate order was searched.}
 \item{scores}{A data frame with one row per hyperparameter combination
 and columns for \code{q}, \code{lambda}, mean score, and sd of score
-across folds.}
+across folds, plus a \code{label_order} column when more than one
+candidate order was searched.}
+\item{label_orders}{The list of candidate orders that was searched, named
+as in the \code{label_order} column of \code{scores}.}
 \item{fold_assignments}{Integer vector mapping each observation to a
 fold, for reproducibility and comparison with other methods.}
 \item{folds}{The number of folds used.}
@@ -111,6 +128,7 @@ cv_reuse$best_params
 \code{\link{ccn_mean_auc}}, \code{\link{ccn_log_likelihood}},
 \code{\link{ccn_micro_f1}}, \code{\link{ccn_macro_f1}} for built-in scoring
 functions; \code{\link{multilabel_stratified_folds}} for the fold generator;
+\code{\link{entropy_label_order}} for candidate chain orders;
 \code{\link{predict.ccn_cv}}, \code{\link{coef.ccn_cv}},
 \code{\link{fitted.ccn_cv}} for working with the best model.
 }
