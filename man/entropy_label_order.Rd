@@ -33,17 +33,17 @@ a permutation suitable for the \code{label_order} argument of
 Writing \code{H} for the matrix returned by
 \code{\link{conditional_entropy_matrix}}, the methods are:
 \describe{
-  \item{\code{"cebcc1"}}{The label with the smallest row sum of \code{H} is
-    placed at the end of the chain. The best performing rule in Jun et al.
-    (2019), hence the default.}
-  \item{\code{"cebcc2"}}{The label with the largest row sum is placed at the
-    beginning of the chain.}
-  \item{\code{"cebcc3"}}{The label with the smallest column sum is placed at
-    the beginning of the chain.}
-  \item{\code{"cebcc4"}}{The label with the largest column sum is placed at
-    the end of the chain.}
-  \item{\code{"ebcc"}}{Labels are sorted by increasing marginal entropy
-    \eqn{H(y_l)}, ignoring the dependence between labels.}
+\item{\code{"cebcc1"}}{The label with the smallest row sum of \code{H} is
+placed at the end of the chain. The best performing rule in Jun et al.
+(2019), hence the default.}
+\item{\code{"cebcc2"}}{The label with the largest row sum is placed at the
+beginning of the chain.}
+\item{\code{"cebcc3"}}{The label with the smallest column sum is placed at
+the beginning of the chain.}
+\item{\code{"cebcc4"}}{The label with the largest column sum is placed at
+the end of the chain.}
+\item{\code{"ebcc"}}{Labels are sorted by increasing marginal entropy
+\eqn{H(y_l)}, ignoring the dependence between labels.}
 }
 
 The four conditional entropy rules apply their criterion greedily: after
