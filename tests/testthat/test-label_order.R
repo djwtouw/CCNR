@@ -32,18 +32,18 @@ random_labels <- function(n, L, seed) {
 test_that("conditional_entropy_matrix matches the definition", {
   for (seed in 1:5) {
     y <- random_labels(80, 5, seed)
-    expect_equal(conditional_entropy_matrix(y), reference_matrix(y))
+    expect_equal(unname(conditional_entropy_matrix(y)), reference_matrix(y))
   }
 })
 
 test_that("independent labels leave a full bit of entropy", {
   y <- rbind(c(0, 0), c(0, 1), c(1, 0), c(1, 1))
-  expect_equal(conditional_entropy_matrix(y), matrix(c(0, 1, 1, 0), 2, 2))
+  expect_equal(unname(conditional_entropy_matrix(y)), matrix(c(0, 1, 1, 0), 2, 2))
 })
 
 test_that("identical labels leave no residual entropy", {
   y <- rbind(c(0, 0), c(1, 1), c(0, 0), c(1, 1))
-  expect_equal(conditional_entropy_matrix(y), matrix(0, 2, 2))
+  expect_equal(unname(conditional_entropy_matrix(y)), matrix(0, 2, 2))
 })
 
 test_that("constant labels do not produce NaN", {
@@ -52,15 +52,24 @@ test_that("constant labels do not produce NaN", {
   y <- rbind(c(0, 1), c(1, 1), c(0, 1), c(1, 1))
   ce <- conditional_entropy_matrix(y)
   expect_false(anyNA(ce))
-  expect_equal(ce, matrix(c(0, 1, 0, 0), 2, 2))
+  expect_equal(unname(ce), matrix(c(0, 1, 0, 0), 2, 2))
   expect_false(anyNA(conditional_entropy_matrix(matrix(0, 5, 3))))
+})
+
+test_that("the labels are named, falling back to L1..LL", {
+  y <- random_labels(40, 3, 1)
+  expect_equal(dimnames(conditional_entropy_matrix(y)),
+               list(c("L1", "L2", "L3"), c("L1", "L2", "L3")))
+  colnames(y) <- c("a", "b", "c")
+  expect_equal(dimnames(conditional_entropy_matrix(y)),
+               list(c("a", "b", "c"), c("a", "b", "c")))
 })
 
 test_that("the matrix is square with a zero diagonal", {
   y  <- random_labels(100, 4, 10)
   ce <- conditional_entropy_matrix(y)
   expect_equal(dim(ce), c(4L, 4L))
-  expect_equal(diag(ce), rep(0, 4))
+  expect_equal(unname(diag(ce)), rep(0, 4))
 })
 
 test_that("asymmetry equals the difference in marginal entropies", {
@@ -124,10 +133,10 @@ test_that("each cebcc rule uses its documented extremum and end", {
              c(1, 0, 0), c(1, 1, 1), c(0, 0, 1), c(1, 1, 0))
   ce <- conditional_entropy_matrix(y)
 
-  expect_equal(entropy_label_order(y, "cebcc1")[3], which.min(rowSums(ce)))
-  expect_equal(entropy_label_order(y, "cebcc2")[1], which.max(rowSums(ce)))
-  expect_equal(entropy_label_order(y, "cebcc3")[1], which.min(colSums(ce)))
-  expect_equal(entropy_label_order(y, "cebcc4")[3], which.max(colSums(ce)))
+  expect_equal(entropy_label_order(y, "cebcc1")[3], unname(which.min(rowSums(ce))))
+  expect_equal(entropy_label_order(y, "cebcc2")[1], unname(which.max(rowSums(ce))))
+  expect_equal(entropy_label_order(y, "cebcc3")[1], unname(which.min(colSums(ce))))
+  expect_equal(entropy_label_order(y, "cebcc4")[3], unname(which.max(colSums(ce))))
 })
 
 test_that("ties are resolved toward the lowest remaining index", {

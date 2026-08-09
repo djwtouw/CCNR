@@ -52,8 +52,8 @@ predict.ccn <- function(object, newdata = NULL, type = c("class", "response"),
         probs <- probs[, inv_order, drop = FALSE]
     }
 
-    ## Attach label names if available
-    if (!is.null(object$label_names)) colnames(probs) <- object$label_names
+    ## Attach label names
+    colnames(probs) <- object$label_names
 
     if (type == "response") return(probs)
 

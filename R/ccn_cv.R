@@ -16,9 +16,13 @@
 #' fair comparison. If \code{NULL} (default), folds are generated internally by
 #' \code{\link{multilabel_stratified_folds}} using \code{seed}, so that the
 #' proportion of each label is kept roughly constant across folds.
-#' @param scoring A function with signature \code{function(y_true, y_class,
-#' y_prob)} returning a single numeric value. Higher values are assumed to be
-#' better. Defaults to \code{\link{ccn_hamming_accuracy}}.
+#' @param scoring A function returning a single numeric value, called with the
+#' named arguments \code{y_true} (the observed labels of the held out fold),
+#' \code{y_class} (the predicted labels) and \code{y_prob} (the predicted
+#' probabilities). A scoring function that does not need all three should
+#' declare only the ones it uses and absorb the rest in \code{...}, as the
+#' built-in ones do. Higher values are assumed to be better. Defaults to
+#' \code{\link{ccn_hamming_accuracy}}.
 #' @param seed Integer; random seed for fold generation. Ignored if
 #' \code{fold_assignments} is provided. Default \code{NULL}.
 #' @param label_order Candidate chain orders to search over, alongside \code{q}
@@ -141,6 +145,9 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                 next
             }
 
+            ## Both predictions are passed as promises. A scoring function that
+            ## leaves one of them in its ... never evaluates it, so that call to
+            ## predict is never made. Do not force these arguments here.
             fold_scores[k] <- scoring(
                 y_true  = y[test_idx, , drop = FALSE],
                 y_class = predict(fit_k, newdata = x[test_idx, , drop = FALSE],
@@ -236,15 +243,17 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_hamming_accuracy <- function(y_true, y_class, y_prob) {
+ccn_hamming_accuracy <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     mean(y_true == y_class)
 }
 
@@ -258,40 +267,49 @@ ccn_hamming_accuracy <- function(y_true, y_class, y_prob) {
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_exact_match <- function(y_true, y_class, y_prob) {
+ccn_exact_match <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     mean(rowSums(y_true != y_class) == 0)
 }
 
 
 #' Mean log-likelihood scoring function
 #'
-#' Computes the mean per-observation log-likelihood under the predicted
-#' probabilities, for use as a \code{scoring} function in
-#' \code{\link{ccn_cv}}.
+#' Computes the mean per-label log-likelihood under the predicted probabilities,
+#' for use as a \code{scoring} function in \code{\link{ccn_cv}}. Averaging over
+#' label-observation pairs rather than over observations puts the score on the
+#' same scale as \code{\link{ccn_hamming_accuracy}} and keeps it comparable
+#' across data sets with a different number of labels.
+#'
+#' Probabilities are clipped away from 0 and 1 before taking the log, so that a
+#' confidently wrong prediction contributes a large but finite penalty instead
+#' of \code{-Inf}.
 #'
 #' @param y_true A binary matrix of true labels (n x L).
-#' @param y_class A binary matrix of predicted labels (n x L). Not used by this
-#' function but required by the scoring interface.
 #' @param y_prob A numeric matrix of predicted probabilities (n x L).
-#' @param eps Numeric; probabilities are clipped to \code{[eps, 1 - eps]} before
-#' taking the log to avoid \code{-Inf}. Default \code{1e-15}.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted labels supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value; less negative values are better.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_log_likelihood <- function(y_true, y_class, y_prob, eps = 1e-15) {
+ccn_log_likelihood <- function(y_true, y_prob, ...) {
+    eps    <- 1e-15
+    y_true <- as.matrix(y_true)
+    y_prob <- as.matrix(y_prob)
     y_prob <- pmax(pmin(y_prob, 1 - eps), eps)
-    mean(rowSums(y_true * log(y_prob) + (1 - y_true) * log(1 - y_prob)))
+    mean(y_true * log(y_prob) + (1 - y_true) * log(1 - y_prob))
 }
 
 
@@ -304,15 +322,17 @@ ccn_log_likelihood <- function(y_true, y_class, y_prob, eps = 1e-15) {
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_micro_f1 <- function(y_true, y_class, y_prob) {
+ccn_micro_f1 <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     tp <- sum(y_true == 1 & y_class == 1)
     fp <- sum(y_true == 0 & y_class == 1)
     fn <- sum(y_true == 1 & y_class == 0)
@@ -327,15 +347,17 @@ ccn_micro_f1 <- function(y_true, y_class, y_prob) {
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_macro_f1 <- function(y_true, y_class, y_prob) {
+ccn_macro_f1 <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     L <- ncol(y_true)
     f1_per_label <- sapply(seq_len(L), function(l) {
         tp <- sum(y_true[, l] == 1 & y_class[, l] == 1)
@@ -353,20 +375,22 @@ ccn_macro_f1 <- function(y_true, y_class, y_prob) {
 #' \code{\link{ccn_cv}}.
 #'
 #' @param y_true A binary matrix of true labels (n x L).
-#' @param y_class A binary matrix of predicted labels (n x L). Not used by this
-#' function but required by the scoring interface.
 #' @param y_prob A numeric matrix of predicted probabilities (n x L).
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted labels supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_mean_auc <- function(y_true, y_class, y_prob) {
+ccn_mean_auc <- function(y_true, y_prob, ...) {
+    y_true <- as.matrix(y_true)
+    y_prob <- as.matrix(y_prob)
     L <- ncol(y_true)
     aucs <- sapply(seq_len(L), function(l) {
         tryCatch(
-            auc_binary(y_true[, l], y_prob[, l]),
+            .auc_binary(y_true[, l], y_prob[, l]),
             error = function(e) NA_real_
         )
     })
@@ -374,7 +398,7 @@ ccn_mean_auc <- function(y_true, y_class, y_prob) {
 }
 
 
-auc_binary <- function(y_true, y_prob) {
+.auc_binary <- function(y_true, y_prob) {
     if (length(unique(y_true)) < 2L)
         stop("AUC undefined: label has only one class in this fold")
     n_pos    <- sum(y_true == 1)

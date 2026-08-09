@@ -17,8 +17,7 @@ print.ccn <- function(x, ...) {
     cat("  q      :", x$hyperparams$q, "\n")
     cat("  lambda :", x$hyperparams$lambda, "\n")
     cat("\nTraining loss :", round(x$loss, 6), "\n")
-    if (!is.null(x$label_names))
-        cat("Labels        :", paste(x$label_names, collapse = ", "), "\n")
+    cat("Labels        :", paste(x$label_names, collapse = ", "), "\n")
     cat("Label order   :", x$label_order, "\n")
     invisible(x)
 }
@@ -33,9 +32,6 @@ print.ccn <- function(x, ...) {
 #'
 #' @export
 summary.ccn <- function(object, ...) {
-    label_names <- object$label_names %||% paste0("L", seq_len(object$dims$L))
-    label_names <- label_names[object$label_order]
-
     cat("Classifier Chain Network - Summary\n")
     cat("----------------------------------\n")
     cat("Labels (L)    :", object$dims$L, "\n")
@@ -52,19 +48,15 @@ summary.ccn <- function(object, ...) {
 
     cat("\nIntercepts (b):\n")
     b <- object$coefficients$b
-    names(b) <- label_names
     print(round(b, 4))
 
-    cat("\nWeight matrix (W), m x L:\n")
+    cat("\nCoefficients of the explanatory variables (W), m x L:\n")
     W <- object$coefficients$W
-    colnames(W) <- label_names
     print(round(W, 4))
 
     if (length(object$coefficients$C) > 0) {
-        cat("\nChain matrix (C), L x L:\n")
+        cat("\nCoefficients of the label predictions (C), L x L:\n")
         C <- object$coefficients$C
-        dn <- label_names
-        dimnames(C) <- list(dn, dn)
         print(round(C, 4))
     }
 
@@ -74,10 +66,19 @@ summary.ccn <- function(object, ...) {
 
 #' Extract coefficients from a Classifier Chain Network
 #'
+#' Unlike predictions and fitted values, which are returned in the original
+#' column order of \code{y}, the coefficients are in chain order: position
+#' \code{l} refers to the label that occupies position \code{l} in the chain,
+#' that is column \code{label_order[l]} of \code{y}. The names carried by
+#' \code{b}, the columns of \code{W}, and both margins of \code{C} identify
+#' which label each position belongs to. The rows of \code{W} are named after
+#' the columns of \code{x}.
+#'
 #' @param object A fitted \code{"ccn"} object.
 #' @param ... Further arguments passed to or from other methods.
-#' @return A list with elements \code{b} (intercepts), \code{W} (predictor
-#' weights), and \code{C} (chain weights).
+#' @return A list with elements \code{b} (intercepts), \code{W} (coefficients
+#' of the explanatory variables), and \code{C} (coefficients of the label
+#' predictions).
 #'
 #' @example inst/doc/examples/example-methods.R
 #'
@@ -167,8 +168,9 @@ summary.ccn_cv <- function(object, ...) {
 #'
 #' @param object A fitted \code{"ccn_cv"} object.
 #' @param ... Further arguments passed to \code{\link{coef.ccn}}.
-#' @return A list with elements \code{b} (intercepts), \code{W} (predictor
-#' weights), and \code{C} (chain weights).
+#' @return A list with elements \code{b} (intercepts), \code{W} (coefficients
+#' of the explanatory variables), and \code{C} (coefficients of the label
+#' predictions).
 #' @seealso \code{\link{ccn_cv}}, \code{\link{coef.ccn}}.
 #'
 #' @example inst/doc/examples/example-ccn_cv.R

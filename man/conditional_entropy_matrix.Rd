@@ -12,7 +12,8 @@ conditional_entropy_matrix(y)
 }
 \value{
 An L x L numeric matrix of conditional entropies in bits, with
-\code{dimnames} taken from the column names of \code{y} when present.
+\code{dimnames} taken from the column names of \code{y}, or \code{L1} up to
+\code{LL} when \code{y} carries none.
 }
 \description{
 Computes the conditional entropy of every label given every other label,

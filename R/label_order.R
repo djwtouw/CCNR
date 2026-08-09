@@ -19,7 +19,8 @@
 #' \code{{0, 1}}.
 #'
 #' @return An L x L numeric matrix of conditional entropies in bits, with
-#' \code{dimnames} taken from the column names of \code{y} when present.
+#' \code{dimnames} taken from the column names of \code{y}, or \code{L1} up to
+#' \code{LL} when \code{y} carries none.
 #'
 #' @references Jun, X., Lu, Y., Lei, Z. and Guolun, D. (2019). Conditional
 #' entropy based classifier chains for multi-label classification.
@@ -56,9 +57,10 @@ conditional_entropy_matrix <- function(y) {
               .entropy_term(n01, n, 1 - p1) + .entropy_term(n00, n, 1 - p1)
     diag(result) <- 0
 
-    label_names <- colnames(y)
-    if (!is.null(label_names))
-        dimnames(result) <- list(label_names, label_names)
+    ## Fall back to the same default names that ccn() uses, so that the labels
+    ## are identified consistently across the output of the package.
+    label_names <- colnames(y) %||% paste0("L", seq_len(ncol(y)))
+    dimnames(result) <- list(label_names, label_names)
 
     result
 }

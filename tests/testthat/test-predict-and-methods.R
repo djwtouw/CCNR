@@ -50,6 +50,11 @@ test_that("predict attaches label names to output when available", {
   expect_equal(colnames(pred), c("A", "B", "C"))
 })
 
+test_that("predict attaches generated label names when y has none", {
+  pred <- predict(fit, newdata = x[1:5, ])
+  expect_equal(colnames(pred), c("L1", "L2", "L3"))
+})
+
 test_that("predict with custom label_order returns original column order", {
   pred <- predict(fit_lo, newdata = x[1:5, ])
   expect_equal(colnames(pred), c("A", "B", "C"))
@@ -109,6 +114,15 @@ test_that("coef b has length L, W is m x L, C is L x L", {
 
 test_that("print.ccn produces output without error", {
   expect_output(print(fit))
+})
+
+test_that("print.ccn reports the label names", {
+  expect_output(print(fit_named), "A, B, C")
+  expect_output(print(fit), "L1, L2, L3")
+})
+
+test_that("summary.ccn labels the coefficients in chain order", {
+  expect_output(summary(fit_lo), "C\\s+A\\s+B")
 })
 
 test_that("summary.ccn produces output without error", {

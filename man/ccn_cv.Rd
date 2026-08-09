@@ -37,9 +37,13 @@ fair comparison. If \code{NULL} (default), folds are generated internally by
 \code{\link{multilabel_stratified_folds}} using \code{seed}, so that the
 proportion of each label is kept roughly constant across folds.}
 
-\item{scoring}{A function with signature \code{function(y_true, y_class,
-y_prob)} returning a single numeric value. Higher values are assumed to be
-better. Defaults to \code{\link{ccn_hamming_accuracy}}.}
+\item{scoring}{A function returning a single numeric value, called with the
+named arguments \code{y_true} (the observed labels of the held out fold),
+\code{y_class} (the predicted labels) and \code{y_prob} (the predicted
+probabilities). A scoring function that does not need all three should
+declare only the ones it uses and absorb the rest in \code{...}, as the
+built-in ones do. Higher values are assumed to be better. Defaults to
+\code{\link{ccn_hamming_accuracy}}.}
 
 \item{seed}{Integer; random seed for fold generation. Ignored if
 \code{fold_assignments} is provided. Default \code{NULL}.}
