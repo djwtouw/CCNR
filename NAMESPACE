@@ -24,10 +24,8 @@ export(entropy_label_order)
 export(generate_dataset)
 export(multilabel_stratified_folds)
 importFrom(Rcpp,evalCpp)
-importFrom(stats,
-  coef,
-  fitted,
-  predict,
-  residuals
-)
+importFrom(stats,coef)
+importFrom(stats,fitted)
+importFrom(stats,predict)
+importFrom(stats,residuals)
 useDynLib(CCNR, .registration = TRUE)
