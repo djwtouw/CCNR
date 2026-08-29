@@ -8,3 +8,4 @@
 * Standard methods for fitted models (`predict`, `coef`, `fitted`, `residuals`, `print`, `summary`) and for cross-validation results (`predict`, `coef`, `fitted`, `print`, `summary`).
 * Built-in scoring functions: Hamming accuracy, exact match ratio, log-likelihood, micro-F1, macro-F1, and mean AUC.
 * BFGS optimizer with Wolfe line search and optional random restarts.
+* `amphibians`: presence of seven amphibian species at 189 Polish water reservoirs, with the site characteristics reduced to 25 principal components. Provides a multilabel data set with rare labels for examples and illustrations.

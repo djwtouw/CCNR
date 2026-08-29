@@ -31,6 +31,10 @@ fit <- ccn(x = data$X, y = data$Y, q = 1, lambda = 0.01)
 print(fit)
 summary(fit)
 
+# With many explanatory variables, W dominates the summary and
+# can be left out
+summary(fit, which = c("b", "C"))
+
 # Coefficients: intercepts (b), coefficients of the explanatory
 # variables (W), and coefficients of the label predictions (C)
 coef(fit)

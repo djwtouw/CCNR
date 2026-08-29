@@ -33,8 +33,10 @@
 #' observations, which a precomputed permutation cannot do. Element names are
 #' used to label the results. A single candidate may be passed directly instead
 #' of wrapped in a list. If \code{NULL} (default), no orders are searched and
-#' the column order of \code{y} is used. See
-#' \code{\link{entropy_label_order}} for ready made rules.
+#' the column order of \code{y} is used. See \code{\link{entropy_label_order}}
+#' for available ordering heuristics.
+#' @param verbose The verbosity of the output. The options are: \code{0} 
+#' (default) silent and \code{1} progress bar.
 #' @param ... Additional arguments passed to \code{\link{ccn}}.
 #'
 #' @return An object of class \code{"ccn_cv"} containing:
@@ -68,7 +70,7 @@
 #' @export
 ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                    scoring = ccn_hamming_accuracy, seed = NULL,
-                   label_order = NULL, ...) {
+                   label_order = NULL, verbose = 0, ...) {
     ## Input coercion
     x <- as.matrix(x)
     y <- as.matrix(y)
@@ -112,9 +114,13 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                         order_idx = seq_along(order_candidates))
 
     ## Evaluate each hyperparameter combination
-    grid_scores <- vector("list", nrow(grid))
+    grid_size <- nrow(grid)
+    grid_scores <- vector("list", grid_size)
+    if (verbose == 1) {
+        progress_bar <- utils::txtProgressBar(min = 0, max = grid_size, style = 3)
+    }
 
-    for (g in seq_len(nrow(grid))) {
+    for (g in seq_len(grid_size)) {
         q_g       <- grid$q[g]
         lambda_g  <- grid$lambda[g]
         order_g   <- order_candidates[[grid$order_idx[g]]]
@@ -165,7 +171,10 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
             sd_score    = stats::sd(fold_scores, na.rm = TRUE),
             stringsAsFactors = FALSE
         )
+        
+        if (verbose == 1) utils::setTxtProgressBar(progress_bar, g)
     }
+    if (verbose == 1) close(progress_bar)
 
     scores <- do.call(rbind, grid_scores)
 

@@ -14,6 +14,7 @@ ccn_cv(
   scoring = ccn_hamming_accuracy,
   seed = NULL,
   label_order = NULL,
+  verbose = 0,
   ...
 )
 }
@@ -56,8 +57,11 @@ every fit, so each fold derives its order from its own training
 observations, which a precomputed permutation cannot do. Element names are
 used to label the results. A single candidate may be passed directly instead
 of wrapped in a list. If \code{NULL} (default), no orders are searched and
-the column order of \code{y} is used. See
-\code{\link{entropy_label_order}} for ready made rules.}
+the column order of \code{y} is used. See \code{\link{entropy_label_order}}
+for available ordering heuristics.}
+
+\item{verbose}{The verbosity of the output. The options are: \code{0}
+(default) silent and \code{1} progress bar.}
 
 \item{...}{Additional arguments passed to \code{\link{ccn}}.}
 }

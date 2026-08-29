@@ -25,13 +25,32 @@ print.ccn <- function(x, ...) {
 
 #' Summarize a Classifier Chain Network
 #'
+#' Prints an overview of the fitted model followed by the estimated
+#' coefficients. Each set of coefficients carries the names of the labels and
+#' of the explanatory variables. For a model with many explanatory variables
+#' \code{W} dominates the output, in which case \code{which} can be used to
+#' leave it out.
+#'
+#' Of \code{C} only the rows and columns that hold coefficients are printed:
+#' the first row and the last column are omitted, since the first label in the
+#' chain has no predecessors and the last precedes none. Entries on and above
+#' the diagonal are printed blank. \code{\link[=coef.ccn]{coef}} returns the
+#' full \code{L} by \code{L} matrix, with \code{NA} in those positions.
+#'
 #' @param object A fitted \code{"ccn"} object.
+#' @param which Character vector selecting which sets of coefficients are
+#' printed: any subset of \code{"b"} (intercepts), \code{"W"} (coefficients of
+#' the explanatory variables), and \code{"C"} (coefficients of the label
+#' predictions). All three are printed by default.
+#' @param digits Number of decimal places used for the coefficients. Default
+#' \code{4}.
 #' @param ... Further arguments passed to or from other methods.
 #'
 #' @example inst/doc/examples/example-methods.R
 #'
 #' @export
-summary.ccn <- function(object, ...) {
+summary.ccn <- function(object, which = c("b", "W", "C"), digits = 4, ...) {
+    which <- match.arg(which, several.ok = TRUE)
     cat("Classifier Chain Network - Summary\n")
     cat("----------------------------------\n")
     cat("Labels (L)    :", object$dims$L, "\n")
@@ -46,18 +65,23 @@ summary.ccn <- function(object, ...) {
     cat("Deterministic starts :", 1, "\n")
     cat("Random starts        :", object$n_starts - 1, "\n")
 
-    cat("\nIntercepts (b):\n")
-    b <- object$coefficients$b
-    print(round(b, 4))
+    if ("b" %in% which) {
+        cat("\nIntercepts (b):\n")
+        print(round(object$coefficients$b, digits))
+    }
 
-    cat("\nCoefficients of the explanatory variables (W), m x L:\n")
-    W <- object$coefficients$W
-    print(round(W, 4))
+    if ("W" %in% which) {
+        cat("\nCoefficients of the explanatory variables (W), m x L:\n")
+        print(round(object$coefficients$W, digits))
+    }
 
-    if (length(object$coefficients$C) > 0) {
-        cat("\nCoefficients of the label predictions (C), L x L:\n")
-        C <- object$coefficients$C
-        print(round(C, 4))
+    C <- object$coefficients$C
+    if ("C" %in% which && is.matrix(C) && nrow(C) > 1) {
+        cat("\nCoefficients of the label predictions (C):\n")
+        C_formatted <- C[-1, -ncol(C), drop = FALSE]
+        out <- formatC(C_formatted, format = "f", digits = digits)
+        out[is.na(C_formatted)] <- ""
+        print(out, quote = FALSE, right = TRUE)
     }
 
     invisible(object)
