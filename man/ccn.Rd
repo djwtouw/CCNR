@@ -35,7 +35,14 @@ labels are chained. Entry \code{label_order[l]} gives the index of the
 original column of \code{y} that occupies position \code{l} in the chain.
 Earlier labels in the chain are used as features when predicting later
 labels. If \code{NULL} (default), the natural column order \code{1:L} is
-used. Outputs are always returned in the original column order of \code{y}.}
+used. Outputs are always returned in the original column order of \code{y}.
+
+A function is also accepted, and is called as \code{label_order(x, y)} on
+the data supplied to \code{ccn} before fitting; it must return a
+permutation of \code{1:L}. This defers the choice of order to fit time, so
+that under cross-validation every fold derives its order from its own
+training observations. See \code{\link{entropy_label_order}} for ready made
+rules and \code{\link{ccn_cv}} for comparing several of them.}
 
 \item{conv_tol}{Convergence tolerance for the optimizer. Default 1e-6.}
 

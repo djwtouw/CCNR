@@ -16,22 +16,43 @@
 #' fair comparison. If \code{NULL} (default), folds are generated internally by
 #' \code{\link{multilabel_stratified_folds}} using \code{seed}, so that the
 #' proportion of each label is kept roughly constant across folds.
-#' @param scoring A function with signature \code{function(y_true, y_class,
-#' y_prob)} returning a single numeric value. Higher values are assumed to be
-#' better. Defaults to \code{\link{ccn_hamming_accuracy}}.
+#' @param scoring A function returning a single numeric value, called with the
+#' named arguments \code{y_true} (the observed labels of the held out fold),
+#' \code{y_class} (the predicted labels) and \code{y_prob} (the predicted
+#' probabilities). A scoring function that does not need all three should
+#' declare only the ones it uses and absorb the rest in \code{...}, as the
+#' built-in ones do. Higher values are assumed to be better. Defaults to
+#' \code{\link{ccn_hamming_accuracy}}.
 #' @param seed Integer; random seed for fold generation. Ignored if
 #' \code{fold_assignments} is provided. Default \code{NULL}.
+#' @param label_order Candidate chain orders to search over, alongside \code{q}
+#' and \code{lambda}. A list whose elements are each \code{NULL} (the column
+#' order of \code{y}), a permutation of \code{1:L}, or a function
+#' \code{f(x, y)} returning such a permutation. A function is evaluated inside
+#' every fit, so each fold derives its order from its own training
+#' observations, which a precomputed permutation cannot do. Element names are
+#' used to label the results. A single candidate may be passed directly instead
+#' of wrapped in a list. If \code{NULL} (default), no orders are searched and
+#' the column order of \code{y} is used. See \code{\link{entropy_label_order}}
+#' for available ordering heuristics.
+#' @param verbose The verbosity of the output. The options are: \code{0} 
+#' (default) silent and \code{1} progress bar.
 #' @param ... Additional arguments passed to \code{\link{ccn}}.
 #'
 #' @return An object of class \code{"ccn_cv"} containing:
 #' \describe{
 #'   \item{best_model}{A \code{"ccn"} object fitted on the full data with the
-#'     best hyperparameters.}
+#'     best hyperparameters. When the winning candidate is a function, it is
+#'     applied to the full data for this refit.}
 #'   \item{best_params}{A one-row data frame with the best \code{q} and
-#'     \code{lambda}.}
+#'     \code{lambda}, and the name of the best \code{label_order} when more than
+#'     one candidate order was searched.}
 #'   \item{scores}{A data frame with one row per hyperparameter combination
 #'     and columns for \code{q}, \code{lambda}, mean score, and sd of score
-#'     across folds.}
+#'     across folds, plus a \code{label_order} column when more than one
+#'     candidate order was searched.}
+#'   \item{label_orders}{The list of candidate orders that was searched, named
+#'     as in the \code{label_order} column of \code{scores}.}
 #'   \item{fold_assignments}{Integer vector mapping each observation to a
 #'     fold, for reproducibility and comparison with other methods.}
 #'   \item{folds}{The number of folds used.}
@@ -40,6 +61,7 @@
 #' \code{\link{ccn_mean_auc}}, \code{\link{ccn_log_likelihood}},
 #' \code{\link{ccn_micro_f1}}, \code{\link{ccn_macro_f1}} for built-in scoring
 #' functions; \code{\link{multilabel_stratified_folds}} for the fold generator;
+#' \code{\link{entropy_label_order}} for candidate chain orders;
 #' \code{\link{predict.ccn_cv}}, \code{\link{coef.ccn_cv}},
 #' \code{\link{fitted.ccn_cv}} for working with the best model.
 #'
@@ -47,7 +69,8 @@
 #'
 #' @export
 ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
-                   scoring = ccn_hamming_accuracy, seed = NULL, ...) {
+                   scoring = ccn_hamming_accuracy, seed = NULL,
+                   label_order = NULL, verbose = 0, ...) {
     ## Input coercion
     x <- as.matrix(x)
     y <- as.matrix(y)
@@ -83,15 +106,25 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                                                         seed = seed)
     }
 
+    ## Candidate label orders
+    order_candidates <- .label_order_candidates(label_order, ncol(y))
+
     ## Build hyperparameter grid
-    grid <- expand.grid(q = q, lambda = lambda)
+    grid <- expand.grid(q = q, lambda = lambda,
+                        order_idx = seq_along(order_candidates))
 
     ## Evaluate each hyperparameter combination
-    grid_scores <- vector("list", nrow(grid))
+    grid_size <- nrow(grid)
+    grid_scores <- vector("list", grid_size)
+    if (verbose == 1) {
+        progress_bar <- utils::txtProgressBar(min = 0, max = grid_size, style = 3)
+    }
 
-    for (g in seq_len(nrow(grid))) {
-        q_g      <- grid$q[g]
-        lambda_g <- grid$lambda[g]
+    for (g in seq_len(grid_size)) {
+        q_g       <- grid$q[g]
+        lambda_g  <- grid$lambda[g]
+        order_g   <- order_candidates[[grid$order_idx[g]]]
+        order_lab <- names(order_candidates)[grid$order_idx[g]]
         fold_scores <- numeric(folds)
 
         for (k in seq_len(folds)) {
@@ -101,11 +134,13 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
             y_train <- y[train_idx, , drop = FALSE]
 
             fit_k <- tryCatch(
-                ccn(x = x_train, y = y_train, q = q_g, lambda = lambda_g, ...),
+                ccn(x = x_train, y = y_train, q = q_g, lambda = lambda_g,
+                    label_order = order_g, ...),
                 error = function(e) {
                     warning(sprintf(
-                        "Grid point (q=%.2f, lambda=%.4f), fold %d failed: %s",
-                        q_g, lambda_g, k, conditionMessage(e)
+                        paste("Grid point (q=%.2f, lambda=%.4f,",
+                              "label_order=%s), fold %d failed: %s"),
+                        q_g, lambda_g, order_lab, k, conditionMessage(e)
                     ))
                     NULL
                 }
@@ -116,6 +151,9 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                 next
             }
 
+            ## Both predictions are passed as promises. A scoring function that
+            ## leaves one of them in its ... never evaluates it, so that call to
+            ## predict is never made. Do not force these arguments here.
             fold_scores[k] <- scoring(
                 y_true  = y[test_idx, , drop = FALSE],
                 y_class = predict(fit_k, newdata = x[test_idx, , drop = FALSE],
@@ -126,22 +164,38 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
         }
 
         grid_scores[[g]] <- data.frame(
-            q          = q_g,
-            lambda     = lambda_g,
-            mean_score = mean(fold_scores, na.rm = TRUE),
-            sd_score   = stats::sd(fold_scores, na.rm = TRUE)
+            q           = q_g,
+            lambda      = lambda_g,
+            label_order = order_lab,
+            mean_score  = mean(fold_scores, na.rm = TRUE),
+            sd_score    = stats::sd(fold_scores, na.rm = TRUE),
+            stringsAsFactors = FALSE
         )
+        
+        if (verbose == 1) utils::setTxtProgressBar(progress_bar, g)
     }
+    if (verbose == 1) close(progress_bar)
 
     scores <- do.call(rbind, grid_scores)
 
     ## Find best hyperparameters
-    best_idx    <- which.max(scores$mean_score)
-    best_params <- scores[best_idx, c("q", "lambda")]
+    best_idx   <- which.max(scores$mean_score)
+    param_cols <- c("q", "lambda", "label_order")
 
-    ## Refit on full data with best hyperparameters
+    ## The label_order column says nothing unless several were searched
+    if (length(order_candidates) == 1L) {
+        scores$label_order <- NULL
+        param_cols <- c("q", "lambda")
+    }
+
+    best_params <- scores[best_idx, param_cols]
+
+    ## Refit on full data with best hyperparameters. A candidate that is a
+    ## function is a rule rather than a fixed order, so it is applied to the
+    ## full data here.
     best_model <- ccn(
-        x = x, y = y, q = best_params$q, lambda = best_params$lambda, ...
+        x = x, y = y, q = best_params$q, lambda = best_params$lambda,
+        label_order = order_candidates[[grid$order_idx[best_idx]]], ...
     )
 
     structure(
@@ -149,11 +203,45 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
             best_model       = best_model,
             best_params      = best_params,
             scores           = scores,
+            label_orders     = order_candidates,
             fold_assignments = fold_assignments,
             folds            = folds
         ),
         class = "ccn_cv"
     )
+}
+
+
+## Normalize the label_order argument of ccn_cv into a named list of candidates.
+## Each candidate is NULL, a permutation of 1:L, or a function of (x, y).
+.label_order_candidates <- function(label_order, L) {
+    if (is.null(label_order)) {
+        return(list(default = NULL))
+    }
+
+    ## A lone permutation or function counts as a single candidate
+    if (!is.list(label_order)) label_order <- list(label_order)
+    if (length(label_order) == 0)
+        stop("label_order must contain at least one candidate")
+
+    for (i in seq_along(label_order)) {
+        candidate <- label_order[[i]]
+        if (is.null(candidate) || is.function(candidate)) next
+        if (!is.numeric(candidate) || length(candidate) != L)
+            stop("label_order candidate ", i, " must be NULL, a function, or ",
+                 "a permutation of 1:L (", L, ")")
+    }
+
+    ## Unnamed candidates are labeled for the results table
+    labels <- names(label_order)
+    if (is.null(labels)) labels <- rep("", length(label_order))
+    blank  <- !nzchar(labels)
+    fill   <- ifelse(vapply(label_order, is.null, logical(1)),
+                     "default", paste0("order", seq_along(label_order)))
+    labels[blank]       <- fill[blank]
+    names(label_order)  <- make.unique(labels, sep = "_")
+
+    label_order
 }
 
 
@@ -164,15 +252,17 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_hamming_accuracy <- function(y_true, y_class, y_prob) {
+ccn_hamming_accuracy <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     mean(y_true == y_class)
 }
 
@@ -186,40 +276,49 @@ ccn_hamming_accuracy <- function(y_true, y_class, y_prob) {
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_exact_match <- function(y_true, y_class, y_prob) {
+ccn_exact_match <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     mean(rowSums(y_true != y_class) == 0)
 }
 
 
 #' Mean log-likelihood scoring function
 #'
-#' Computes the mean per-observation log-likelihood under the predicted
-#' probabilities, for use as a \code{scoring} function in
-#' \code{\link{ccn_cv}}.
+#' Computes the mean per-label log-likelihood under the predicted probabilities,
+#' for use as a \code{scoring} function in \code{\link{ccn_cv}}. Averaging over
+#' label-observation pairs rather than over observations puts the score on the
+#' same scale as \code{\link{ccn_hamming_accuracy}} and keeps it comparable
+#' across data sets with a different number of labels.
+#'
+#' Probabilities are clipped away from 0 and 1 before taking the log, so that a
+#' confidently wrong prediction contributes a large but finite penalty instead
+#' of \code{-Inf}.
 #'
 #' @param y_true A binary matrix of true labels (n x L).
-#' @param y_class A binary matrix of predicted labels (n x L). Not used by this
-#' function but required by the scoring interface.
 #' @param y_prob A numeric matrix of predicted probabilities (n x L).
-#' @param eps Numeric; probabilities are clipped to \code{[eps, 1 - eps]} before
-#' taking the log to avoid \code{-Inf}. Default \code{1e-15}.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted labels supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value; less negative values are better.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_log_likelihood <- function(y_true, y_class, y_prob, eps = 1e-15) {
+ccn_log_likelihood <- function(y_true, y_prob, ...) {
+    eps    <- 1e-15
+    y_true <- as.matrix(y_true)
+    y_prob <- as.matrix(y_prob)
     y_prob <- pmax(pmin(y_prob, 1 - eps), eps)
-    mean(rowSums(y_true * log(y_prob) + (1 - y_true) * log(1 - y_prob)))
+    mean(y_true * log(y_prob) + (1 - y_true) * log(1 - y_prob))
 }
 
 
@@ -232,15 +331,17 @@ ccn_log_likelihood <- function(y_true, y_class, y_prob, eps = 1e-15) {
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_micro_f1 <- function(y_true, y_class, y_prob) {
+ccn_micro_f1 <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     tp <- sum(y_true == 1 & y_class == 1)
     fp <- sum(y_true == 0 & y_class == 1)
     fn <- sum(y_true == 1 & y_class == 0)
@@ -255,15 +356,17 @@ ccn_micro_f1 <- function(y_true, y_class, y_prob) {
 #'
 #' @param y_true A binary matrix of true labels (n x L).
 #' @param y_class A binary matrix of predicted labels (n x L).
-#' @param y_prob A numeric matrix of predicted probabilities (n x L). Not used
-#' by this function but required by the scoring interface.
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted probabilities supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_macro_f1 <- function(y_true, y_class, y_prob) {
+ccn_macro_f1 <- function(y_true, y_class, ...) {
+    y_true  <- as.matrix(y_true)
+    y_class <- as.matrix(y_class)
     L <- ncol(y_true)
     f1_per_label <- sapply(seq_len(L), function(l) {
         tp <- sum(y_true[, l] == 1 & y_class[, l] == 1)
@@ -281,20 +384,22 @@ ccn_macro_f1 <- function(y_true, y_class, y_prob) {
 #' \code{\link{ccn_cv}}.
 #'
 #' @param y_true A binary matrix of true labels (n x L).
-#' @param y_class A binary matrix of predicted labels (n x L). Not used by this
-#' function but required by the scoring interface.
 #' @param y_prob A numeric matrix of predicted probabilities (n x L).
+#' @param ... Ignored, so that this function can also be called with the
+#' predicted labels supplied by \code{\link{ccn_cv}}.
 #' @return A single numeric value between 0 and 1.
 #' @seealso \code{\link{ccn_cv}} where this function is intended to be used.
 #'
 #' @example inst/doc/examples/example-scoring.R
 #'
 #' @export
-ccn_mean_auc <- function(y_true, y_class, y_prob) {
+ccn_mean_auc <- function(y_true, y_prob, ...) {
+    y_true <- as.matrix(y_true)
+    y_prob <- as.matrix(y_prob)
     L <- ncol(y_true)
     aucs <- sapply(seq_len(L), function(l) {
         tryCatch(
-            auc_binary(y_true[, l], y_prob[, l]),
+            .auc_binary(y_true[, l], y_prob[, l]),
             error = function(e) NA_real_
         )
     })
@@ -302,7 +407,7 @@ ccn_mean_auc <- function(y_true, y_class, y_prob) {
 }
 
 
-auc_binary <- function(y_true, y_prob) {
+.auc_binary <- function(y_true, y_prob) {
     if (length(unique(y_true)) < 2L)
         stop("AUC undefined: label has only one class in this fold")
     n_pos    <- sum(y_true == 1)

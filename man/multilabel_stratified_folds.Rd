@@ -13,7 +13,8 @@ multilabel_stratified_folds(y, folds = 5L, seed = NULL)
 \item{folds}{Positive integer; number of folds. Default \code{5L}.}
 
 \item{seed}{Integer or \code{NULL}; random seed controlling the visiting
-order. \code{NULL} (default) uses the current random number stream.}
+order and the tie-breaking. \code{NULL} (default) uses the current random
+number stream.}
 }
 \value{
 An integer vector of length n assigning each observation to a fold
@@ -31,11 +32,11 @@ cross-validation of multi-label models. The result plugs directly into the
 The algorithm is that of Sechidis, Tsoumakas and Vlahavas (2011), "On the
 Stratification of Multi-Label Data". Rows are placed one label at a time,
 rarest label first, each into the fold that most needs an example of that
-label. All ties are broken by lowest index, so the assignment depends only
-on the order in which rows are visited; it is stratified either way.
-\code{seed = NULL} draws a fresh random order from the current random number
-stream (set \code{\link{set.seed}} beforehand for reproducibility); a
-\code{seed} gives a reproducible order.
+label. Every tie is broken at random, as in the original paper, so repeated
+calls give different (equally stratified) assignments. \code{seed = NULL}
+draws from the current random number stream (set \code{\link{set.seed}}
+beforehand for reproducibility); a \code{seed} gives a reproducible
+assignment.
 }
 \references{
 Sechidis, K., Tsoumakas, G. and Vlahavas, I. (2011). On the

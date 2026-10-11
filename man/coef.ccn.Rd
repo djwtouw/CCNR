@@ -12,11 +12,18 @@
 \item{...}{Further arguments passed to or from other methods.}
 }
 \value{
-A list with elements \code{b} (intercepts), \code{W} (predictor
-weights), and \code{C} (chain weights).
+A list with elements \code{b} (intercepts), \code{W} (coefficients
+of the explanatory variables), and \code{C} (coefficients of the label
+predictions).
 }
 \description{
-Extract coefficients from a Classifier Chain Network
+Unlike predictions and fitted values, which are returned in the original
+column order of \code{y}, the coefficients are in chain order: position
+\code{l} refers to the label that occupies position \code{l} in the chain,
+that is column \code{label_order[l]} of \code{y}. The names carried by
+\code{b}, the columns of \code{W}, and both margins of \code{C} identify
+which label each position belongs to. The rows of \code{W} are named after
+the columns of \code{x}.
 }
 \examples{
 # Generate sample data
@@ -30,8 +37,12 @@ fit <- ccn(x = data$X, y = data$Y, q = 1, lambda = 0.01)
 print(fit)
 summary(fit)
 
-# Coefficients: intercepts (b), predictor weights (W), and chain
-# weights (C)
+# With many explanatory variables, W dominates the summary and
+# can be left out
+summary(fit, which = c("b", "C"))
+
+# Coefficients: intercepts (b), coefficients of the explanatory
+# variables (W), and coefficients of the label predictions (C)
 coef(fit)
 
 # Fitted classes and fitted probabilities

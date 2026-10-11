@@ -1,8 +1,8 @@
 # Tests for the multi-label stratified fold generator.
 #
-# The equivalence test reads frozen fixtures (strat_y.csv / strat_folds.csv)
-# whose golden fold assignments are the deterministic (seed = NULL) split, so
-# any drift in the algorithm is caught here.
+# The generator breaks every tie at random, so the tests check the properties
+# of the split (coverage, label variation, prevalence) plus reproducibility
+# from a seed, rather than one frozen assignment.
 
 set.seed(11)
 n <- 200L; L <- 4L
@@ -12,10 +12,6 @@ n <- 200L; L <- 4L
 }
 y <- .mk_y(n, L, 11)
 
-.read_fixture <- function(file) {
-  as.matrix(read.csv(test_path("fixtures", file), header = FALSE))
-}
-
 # ---- Partition / coverage ----------------------------------------------
 
 test_that("multilabel_stratified_folds covers all folds 1..k exactly once", {
@@ -23,9 +19,10 @@ test_that("multilabel_stratified_folds covers all folds 1..k exactly once", {
   f <- multilabel_stratified_folds(y, folds = k, seed = 1L)
   expect_length(f, n)
   expect_equal(sort(unique(f)), seq_len(k))
-  # Fold sizes differ by at most one.
+  # Label prevalence is balanced ahead of fold size, so sizes are close to n / k
+  # rather than exactly equal.
   sizes <- as.integer(table(f))
-  expect_lte(max(sizes) - min(sizes), 1L)
+  expect_true(all(abs(sizes - n / k) <= 0.15 * n / k))
 })
 
 # ---- Label variation in every fold -------------------------------------
@@ -91,16 +88,19 @@ test_that("multilabel_stratified_folds rejects non-binary y", {
   expect_error(multilabel_stratified_folds(y + 0.5, folds = 3L))
 })
 
-# ---- Equivalence with the committed golden fixture ---------------------
+# ---- Random tie-breaking -----------------------------------------------
 
-test_that("identity-order folds match the committed golden fixture", {
-  y_fix  <- .read_fixture("strat_y.csv")
-  golden <- as.integer(.read_fixture("strat_folds.csv"))
-  dimnames(y_fix) <- NULL
-  # Drive the identity visiting order so the split is reproducible and matches
-  # the frozen golden regardless of the ambient random number stream.
-  f <- .iterative_stratification(y_fix, 5L, seq_len(nrow(y_fix)))
-  expect_equal(f, golden)
+test_that("ties are broken randomly", {
+  # All candidates stay tied (every row carries every label) and the visiting
+  # order is fixed, so only the tie-breaking can differ.
+  y_tie <- matrix(1L, 40L, 2L)
+  visit <- seq_len(nrow(y_tie))
+  set.seed(1); a <- .iterative_stratification(y_tie, 5L, visit)
+  set.seed(2); b <- .iterative_stratification(y_tie, 5L, visit)
+  expect_false(isTRUE(all.equal(a, b)))
+  # Both are still valid, balanced partitions.
+  expect_equal(as.integer(table(a)), rep(8L, 5L))
+  expect_equal(as.integer(table(b)), rep(8L, 5L))
 })
 
 # ---- Integration with ccn_cv -------------------------------------------
