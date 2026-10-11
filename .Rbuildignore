@@ -8,3 +8,4 @@
 ^\.claude$
 ^src/ccncpp/src/.*\.o$
 ^data-raw$
+^\.idea$
