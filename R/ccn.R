@@ -16,6 +16,13 @@
 #' Earlier labels in the chain are used as features when predicting later
 #' labels. If \code{NULL} (default), the natural column order \code{1:L} is
 #' used. Outputs are always returned in the original column order of \code{y}.
+#'
+#' A function is also accepted, and is called as \code{label_order(x, y)} on
+#' the data supplied to \code{ccn} before fitting; it must return a
+#' permutation of \code{1:L}. This defers the choice of order to fit time, so
+#' that under cross-validation every fold derives its order from its own
+#' training observations. See \code{\link{entropy_label_order}} for ready made
+#' rules and \code{\link{ccn_cv}} for comparing several of them.
 #' @param conv_tol Convergence tolerance for the optimizer. Default 1e-6.
 #' @param n_starts Number of random restarts; the fit with the lowest training
 #' loss is returned. The first restart always uses a deterministic
@@ -65,17 +72,27 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
 
     ## Label order
     # First store the column names of y in unpermuted order
-    label_names <- colnames(y)
+    label_names <- colnames(y) %||% paste0("L", seq_len(L))
+
+    # A function is evaluated on the data given to this fit, so the order
+    # follows the observations it is derived from
+    order_source <- "label_order"
+    if (is.function(label_order)) {
+        label_order  <- label_order(x, y)
+        order_source <- "the label_order function"
+        if (is.null(label_order))
+            stop(order_source, " must return a permutation of 1:L")
+    }
 
     # The order is 1..L by default
     if (is.null(label_order)) {
         label_order <- seq_len(L)
     } else {
-        if (!is.integer(label_order)) label_order <- as.integer(label_order)
+        label_order <- suppressWarnings(as.integer(label_order))
         if (length(label_order) != L)
-            stop("label_order must have length L (", L, ")")
-        if (!setequal(label_order, seq_len(L)))
-            stop("label_order must be a permutation of 1:L")
+            stop(order_source, " must have length L (", L, ")")
+        if (anyNA(label_order) || !setequal(label_order, seq_len(L)))
+            stop(order_source, " must be a permutation of 1:L")
     }
 
     y <- y[, label_order, drop = FALSE]
@@ -152,16 +169,23 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
     if (is.null(best_fit))
         stop("All optimization starts failed. Check your data and hyperparameters.")
 
-    ## Reshape flat coefficient vector into a structured list
-    coefs = list()
-    coefs$b = best_fit$coefficients[seq_len(L)]
+    ## Coefficients are stored in chain order, so their names are permuted too
+    label_names_permuted <- label_names[label_order]
+    variable_names       <- colnames(x) %||% paste0("X", seq_len(m))
 
-    coefs$W = matrix(0, nrow = m, ncol = L)
+    ## Reshape flat coefficient vector into a structured list
+    coefs <- list()
+    coefs$b <- best_fit$coefficients[seq_len(L)]
+    names(coefs$b) <- label_names_permuted
+
+    coefs$W <- matrix(0, nrow = m, ncol = L)
     for (label_l in seq_len(L)) {
         a <- L + (label_l - 1) * m + 1
         b <- a + m - 1
         coefs$W[, label_l] <- best_fit$coefficients[a:b]
     }
+    colnames(coefs$W) <- label_names_permuted
+    rownames(coefs$W) <- variable_names
 
     if (L > 1) {
         # Select the c coefficients
@@ -173,6 +197,8 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
         coefs$C <- matrix(NA, nrow = L, ncol = L)
         coefs$C[upper.tri(coefs$C)] <- c
         coefs$C <- t(coefs$C)
+        colnames(coefs$C) <- label_names_permuted
+        rownames(coefs$C) <- label_names_permuted
     } else {
         coefs$C <- numeric(0)
     }
@@ -183,7 +209,9 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
     # Restore original label order
     inv_order    <- order(label_order)
     fitted_probs <- fitted_probs[, inv_order, drop = FALSE]
-    if (!is.null(label_names)) colnames(fitted_probs) <- label_names
+    y            <- y[, inv_order, drop = FALSE]
+    colnames(fitted_probs) <- label_names
+    colnames(y)            <- label_names
 
     ## Assemble S3 object
     structure(
@@ -192,7 +220,7 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
             coefficients_flat  = best_fit$coefficients,
             label_order        = label_order,
             label_names        = label_names,
-            y                  = y[, inv_order, drop = FALSE],
+            y                  = y,
             fitted.values      = (fitted_probs >= 0.5) * 1L,
             fitted.probs       = fitted_probs,
             n_params           = n_params,

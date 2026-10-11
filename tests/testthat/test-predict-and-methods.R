@@ -50,6 +50,11 @@ test_that("predict attaches label names to output when available", {
   expect_equal(colnames(pred), c("A", "B", "C"))
 })
 
+test_that("predict attaches generated label names when y has none", {
+  pred <- predict(fit, newdata = x[1:5, ])
+  expect_equal(colnames(pred), c("L1", "L2", "L3"))
+})
+
 test_that("predict with custom label_order returns original column order", {
   pred <- predict(fit_lo, newdata = x[1:5, ])
   expect_equal(colnames(pred), c("A", "B", "C"))
@@ -111,6 +116,15 @@ test_that("print.ccn produces output without error", {
   expect_output(print(fit))
 })
 
+test_that("print.ccn reports the label names", {
+  expect_output(print(fit_named), "A, B, C")
+  expect_output(print(fit), "L1, L2, L3")
+})
+
+test_that("summary.ccn labels the coefficients in chain order", {
+  expect_output(summary(fit_lo), "C\\s+A\\s+B")
+})
+
 test_that("summary.ccn produces output without error", {
   expect_output(summary(fit))
 })
@@ -121,4 +135,40 @@ test_that("summary.ccn works when y has no column names", {
 
 test_that("summary.ccn works when y has column names", {
   expect_output(summary(fit_named))
+})
+
+test_that("summary.ccn prints all three blocks by default", {
+  out <- capture.output(summary(fit))
+  expect_length(grep("^Intercepts \\(b\\):$", out), 1)
+  expect_length(grep("^Coefficients of the explanatory variables", out), 1)
+  expect_length(grep("^Coefficients of the label predictions", out), 1)
+})
+
+test_that("summary.ccn 'which' selects the printed blocks", {
+  out <- capture.output(summary(fit, which = c("b", "C")))
+  expect_length(grep("^Intercepts \\(b\\):$", out), 1)
+  expect_length(grep("^Coefficients of the explanatory variables", out), 0)
+  expect_length(grep("^Coefficients of the label predictions", out), 1)
+
+  out <- capture.output(summary(fit, which = "W"))
+  expect_length(grep("^Intercepts \\(b\\):$", out), 0)
+  expect_length(grep("^Coefficients of the explanatory variables", out), 1)
+  expect_length(grep("^Coefficients of the label predictions", out), 0)
+})
+
+test_that("summary.ccn rejects an unknown block", {
+  expect_error(summary(fit, which = "Z"))
+})
+
+test_that("summary.ccn 'digits' controls the number of decimals", {
+  out <- capture.output(summary(fit, which = "b", digits = 1))
+  block <- out[(grep("^Intercepts \\(b\\):$", out) + 1):length(out)]
+  expect_true(any(grepl("-?\\d\\.\\d(\\s|$)", block)))
+  expect_false(any(grepl("\\d\\.\\d{2}", block)))
+})
+
+test_that("summary.ccn returns the object invisibly", {
+  capture.output(res <- withVisible(summary(fit)))
+  expect_false(res$visible)
+  expect_identical(res$value, fit)
 })

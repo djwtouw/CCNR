@@ -54,7 +54,7 @@ Runnable example scripts for all exported functions are available in [`inst/doc/
 
 ## Correspondence with CCNPy
 
-A Python implementation with the same functionality is available as [CCNPy](https://github.com/djwtouw/CCNPy), which follows the scikit-learn API. The main equivalences are:
+A Python implementation with the same functionality is available as [CCNPy](https://github.com/djwtouw/CCNPy), which follows the scikit-learn API. The following table describes the correspondence between the functionalities of both packages:
 
 | CCNR (R) | CCNPy (Python) |
 |----------|----------------|
@@ -65,6 +65,8 @@ A Python implementation with the same functionality is available as [CCNPy](http
 | `ccn_cv(...)` | `ccn_cv(...)` or `GridSearchCV` |
 | `ccn_hamming_accuracy`, ... | `ccnpy.metrics.*` |
 | `generate_dataset(n)` | `generate_dataset(n)` |
+| `entropy_label_order(y, method)` | `entropy_label_order(Y, method=...)` |
+| `conditional_entropy_matrix(y)` | `conditional_entropy_matrix(Y)` |
 
 The regularization penalty is named `lambda` in R and `alpha` in Python (`lambda` is a reserved word; `alpha` is the scikit-learn convention).
 

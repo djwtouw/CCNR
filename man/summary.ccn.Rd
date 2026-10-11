@@ -4,15 +4,34 @@
 \alias{summary.ccn}
 \title{Summarize a Classifier Chain Network}
 \usage{
-\method{summary}{ccn}(object, ...)
+\method{summary}{ccn}(object, which = c("b", "W", "C"), digits = 4, ...)
 }
 \arguments{
 \item{object}{A fitted \code{"ccn"} object.}
 
+\item{which}{Character vector selecting which sets of coefficients are
+printed: any subset of \code{"b"} (intercepts), \code{"W"} (coefficients of
+the explanatory variables), and \code{"C"} (coefficients of the label
+predictions). All three are printed by default.}
+
+\item{digits}{Number of decimal places used for the coefficients. Default
+\code{4}.}
+
 \item{...}{Further arguments passed to or from other methods.}
 }
 \description{
-Summarize a Classifier Chain Network
+Prints an overview of the fitted model followed by the estimated
+coefficients. Each set of coefficients carries the names of the labels and
+of the explanatory variables. For a model with many explanatory variables
+\code{W} dominates the output, in which case \code{which} can be used to
+leave it out.
+}
+\details{
+Of \code{C} only the rows and columns that hold coefficients are printed:
+the first row and the last column are omitted, since the first label in the
+chain has no predecessors and the last precedes none. Entries on and above
+the diagonal are printed blank. \code{\link[=coef.ccn]{coef}} returns the
+full \code{L} by \code{L} matrix, with \code{NA} in those positions.
 }
 \examples{
 # Generate sample data
@@ -26,8 +45,12 @@ fit <- ccn(x = data$X, y = data$Y, q = 1, lambda = 0.01)
 print(fit)
 summary(fit)
 
-# Coefficients: intercepts (b), predictor weights (W), and chain
-# weights (C)
+# With many explanatory variables, W dominates the summary and
+# can be left out
+summary(fit, which = c("b", "C"))
+
+# Coefficients: intercepts (b), coefficients of the explanatory
+# variables (W), and coefficients of the label predictions (C)
 coef(fit)
 
 # Fitted classes and fitted probabilities

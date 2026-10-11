@@ -7,3 +7,4 @@
 ^\.github$
 ^\.claude$
 ^src/ccncpp/src/.*\.o$
+^data-raw$

@@ -12,8 +12,9 @@
 \item{...}{Further arguments passed to \code{\link{coef.ccn}}.}
 }
 \value{
-A list with elements \code{b} (intercepts), \code{W} (predictor
-weights), and \code{C} (chain weights).
+A list with elements \code{b} (intercepts), \code{W} (coefficients
+of the explanatory variables), and \code{C} (coefficients of the label
+predictions).
 }
 \description{
 Extracts the coefficients of the best model selected by cross-validation.

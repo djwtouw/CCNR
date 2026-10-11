@@ -83,6 +83,52 @@ test_that("ccn preserves column names of y", {
   expect_equal(fit$label_names, c("A", "B", "C"))
 })
 
+test_that("ccn falls back to generated label names when y is unnamed", {
+  fit <- ccn(x, y, q = 1, lambda = 0.01)
+  expect_equal(fit$label_names, c("L1", "L2", "L3"))
+  expect_equal(colnames(fit$fitted.probs), c("L1", "L2", "L3"))
+  expect_equal(colnames(fit$y), c("L1", "L2", "L3"))
+})
+
+test_that("ccn stores y in the original column order with label names", {
+  y_named <- y
+  colnames(y_named) <- c("A", "B", "C")
+  fit <- ccn(x, y_named, q = 1, lambda = 0.01, label_order = c(3L, 1L, 2L))
+  expect_equal(colnames(fit$y), c("A", "B", "C"))
+  expect_equal(unname(fit$y), unname(y_named))
+})
+
+# ---- Coefficient names -------------------------------------------------
+
+test_that("ccn names the coefficients after the labels and the predictors", {
+  y_named <- y
+  colnames(y_named) <- c("A", "B", "C")
+  x_named <- x
+  colnames(x_named) <- c("v1", "v2")
+  fit   <- ccn(x_named, y_named, q = 1, lambda = 0.01)
+  coefs <- coef(fit)
+  expect_equal(names(coefs$b), c("A", "B", "C"))
+  expect_equal(colnames(coefs$W), c("A", "B", "C"))
+  expect_equal(rownames(coefs$W), c("v1", "v2"))
+  expect_equal(dimnames(coefs$C), list(c("A", "B", "C"), c("A", "B", "C")))
+})
+
+test_that("ccn names the coefficients in chain order, not column order", {
+  y_named <- y
+  colnames(y_named) <- c("A", "B", "C")
+  order <- c(3L, 1L, 2L)
+  fit   <- ccn(x, y_named, q = 1, lambda = 0.01, label_order = order)
+  coefs <- coef(fit)
+  expect_equal(names(coefs$b), c("C", "A", "B"))
+  expect_equal(colnames(coefs$W), c("C", "A", "B"))
+  expect_equal(dimnames(coefs$C), list(c("C", "A", "B"), c("C", "A", "B")))
+})
+
+test_that("ccn falls back to generated predictor names when x is unnamed", {
+  fit <- ccn(x, y, q = 1, lambda = 0.01)
+  expect_equal(rownames(coef(fit)$W), c("X1", "X2"))
+})
+
 test_that("ccn fitted.values and fitted.probs carry label names", {
   y_named <- y
   colnames(y_named) <- c("A", "B", "C")

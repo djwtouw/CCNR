@@ -21,11 +21,11 @@ License: GPL-3
 Depends: R (>= 4.4.0)
 URL: https://github.com/djwtouw/CCNR
 BugReports: https://github.com/djwtouw/CCNR/issues
-Imports: Rcpp (>= 1.0.9), MASS, stats
+Imports: Rcpp (>= 1.0.9), MASS, stats, utils
 Suggests: testthat (>= 3.0.0)
+LazyData: true
 Config/testthat/edition: 3
 Config/build/clean-inst-doc: FALSE
 LinkingTo: Rcpp, RcppEigen
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
