@@ -11,6 +11,11 @@
 
 \item{...}{Further arguments passed to or from other methods.}
 }
+\value{
+Invisibly returns \code{x}, the fitted \code{"ccn"} object. Called
+for the side effect of printing a compact overview of the model: its
+dimensions, hyperparameters, training loss, label names, and chain order.
+}
 \description{
 Print a Classifier Chain Network
 }

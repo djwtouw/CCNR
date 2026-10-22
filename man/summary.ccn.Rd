@@ -19,6 +19,11 @@ predictions). All three are printed by default.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }
+\value{
+Invisibly returns \code{object}, the fitted \code{"ccn"} object.
+Called for the side effect of printing the overview and the selected sets
+of coefficients.
+}
 \description{
 Prints an overview of the fitted model followed by the estimated
 coefficients. Each set of coefficients carries the names of the labels and

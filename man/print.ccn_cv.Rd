@@ -11,6 +11,12 @@
 
 \item{...}{Further arguments passed to or from other methods.}
 }
+\value{
+Invisibly returns \code{x}, the \code{"ccn_cv"} object. Called for
+the side effect of printing the number of folds, the size of the
+hyperparameter grid, the selected hyperparameters, and the score of every
+grid point.
+}
 \description{
 Print a Classifier Chain Network Cross-validation
 }

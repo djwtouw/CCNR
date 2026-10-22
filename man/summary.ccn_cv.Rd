@@ -11,6 +11,11 @@
 
 \item{...}{Further arguments passed to or from other methods.}
 }
+\value{
+Invisibly returns \code{object}, the \code{"ccn_cv"} object. Called
+for the side effect of printing the cross-validation results, which are
+identical to the output of \code{\link[=print.ccn_cv]{print}}.
+}
 \description{
 Summarize Classifier Chain Network Cross-Validation Results
 }

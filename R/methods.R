@@ -2,6 +2,9 @@
 #'
 #' @param x A fitted \code{"ccn"} object.
 #' @param ... Further arguments passed to or from other methods.
+#' @return Invisibly returns \code{x}, the fitted \code{"ccn"} object. Called
+#' for the side effect of printing a compact overview of the model: its
+#' dimensions, hyperparameters, training loss, label names, and chain order.
 #'
 #' @example inst/doc/examples/example-methods.R
 #'
@@ -45,6 +48,9 @@ print.ccn <- function(x, ...) {
 #' @param digits Number of decimal places used for the coefficients. Default
 #' \code{4}.
 #' @param ... Further arguments passed to or from other methods.
+#' @return Invisibly returns \code{object}, the fitted \code{"ccn"} object.
+#' Called for the side effect of printing the overview and the selected sets
+#' of coefficients.
 #'
 #' @example inst/doc/examples/example-methods.R
 #'
@@ -151,6 +157,10 @@ residuals.ccn <- function(object, ...) {
 #'
 #' @param x A fitted \code{"ccn_cv"} object.
 #' @param ... Further arguments passed to or from other methods.
+#' @return Invisibly returns \code{x}, the \code{"ccn_cv"} object. Called for
+#' the side effect of printing the number of folds, the size of the
+#' hyperparameter grid, the selected hyperparameters, and the score of every
+#' grid point.
 #'
 #' @example inst/doc/examples/example-ccn_cv.R
 #'
@@ -176,6 +186,9 @@ print.ccn_cv <- function(x, ...) {
 #'
 #' @param object A fitted \code{"ccn_cv"} object.
 #' @param ... Further arguments passed to or from other methods.
+#' @return Invisibly returns \code{object}, the \code{"ccn_cv"} object. Called
+#' for the side effect of printing the cross-validation results, which are
+#' identical to the output of \code{\link[=print.ccn_cv]{print}}.
 #'
 #' @example inst/doc/examples/example-ccn_cv.R
 #'
