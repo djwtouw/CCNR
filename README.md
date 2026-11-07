@@ -1,5 +1,9 @@
 # CCNR: Classifier Chain Networks for Multi-Label Classification
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/CCNR)](https://cran.r-project.org/package=CCNR)
+[![metacran downloads](https://cranlogs.r-pkg.org/badges/CCNR)](https://cran.r-project.org/package=CCNR)
+
 [![R-CMD-check](https://github.com/djwtouw/CCNR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djwtouw/CCNR/actions/workflows/R-CMD-check.yaml)
 
 Fit a Classifier Chain Network (CCN) for multi-label binary classification. The model jointly learns label dependencies through a chain structure and minimizes an L*q* norm aggregated cross-entropy loss, estimated with a BFGS optimizer with Wolfe line search implemented in C++ via [Rcpp](https://cran.r-project.org/package=Rcpp) and Eigen. The package provides standard methods for prediction, model inspection, and k-fold cross-validation with grid search over the hyperparameters.
@@ -11,7 +15,13 @@ D.J.W. Touw and M. Van de Velden (2025). *Classifier Chain Networks for Multi-La
 
 ## Installation
 
-The package can be installed directly from GitHub using the `remotes` package:
+CCNR is available on CRAN and can be installed using:
+
+```r
+install.packages("CCNR")
+```
+
+The package can also be installed directly from GitHub using the `remotes` package:
 
 ```r
 install.packages("remotes")
