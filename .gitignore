@@ -2,6 +2,7 @@
 .idea/
 CCNR.Rcheck/
 CCNR_*.tar.gz
+*.html
 *.Rproj
 .Rhistory
 .Rapp.history

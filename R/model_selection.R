@@ -33,6 +33,8 @@
 #' @seealso \code{\link{ccn_cv}}, which uses this to generate folds when no
 #' \code{fold_assignments} are supplied.
 #'
+#' @example inst/doc/examples/example-multilabel_stratified_folds.R
+#'
 #' @export
 multilabel_stratified_folds <- function(y, folds = 5L, seed = NULL) {
     ## Input coercion and validation

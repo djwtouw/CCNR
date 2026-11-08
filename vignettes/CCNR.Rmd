@@ -1,0 +1,183 @@
+---
+title: "Multi-label classification with CCNR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multi-label classification with CCNR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+In multi-label classification, each observation can be associated with several
+labels at once. CCNR fits a classifier chain network, in which every label
+receives the predictions of the labels before it in the chain, and the
+parameters of all labels are estimated jointly. This vignette walks through a
+complete analysis: fitting a model, choosing the label order, selecting the
+tuning parameters by cross-validation, evaluating predictions on held-out data,
+and inspecting the estimated label interdependencies. The method itself is
+described in Touw and Van de Velden (2025).
+
+## Data
+
+The `amphibians` data set records the presence of seven amphibian species at
+189 water reservoirs in Poland. The site characteristics are summarized by 25
+principal components, which serve as the explanatory variables.
+
+```{r}
+library(CCNR)
+data(amphibians)
+X <- amphibians$X
+Y <- amphibians$Y
+dim(X)
+round(colMeans(Y), 2)
+```
+
+The species differ considerably in prevalence. The great crested newt
+(`CrestNewt`) is present at only 11% of the sites.
+
+To evaluate the final model on data it has not seen, 140 sites are used for
+training and the remaining 49 are set aside.
+
+```{r}
+set.seed(1)
+train <- sample(nrow(X), 140)
+X_train <- X[train, ]
+Y_train <- Y[train, ]
+X_test  <- X[-train, ]
+Y_test  <- Y[-train, ]
+```
+
+## Fitting a model
+
+`ccn` takes the explanatory variables `x`, the binary label matrix `y`, and two
+tuning parameters: `q`, which controls how the losses of the labels are
+aggregated, and the ridge penalty `lambda`.
+
+```{r}
+model <- ccn(X_train, Y_train, q = 1.5, lambda = 0.5)
+model
+```
+
+`summary` prints the estimated intercepts `b`, the coefficients `W` of the
+explanatory variables, and the coefficients `C` of the label predictions. The
+coefficients of the principal components are of little interest here, so `W`
+is left out.
+
+```{r}
+summary(model, which = c("b", "C"))
+```
+
+The same estimates are returned as a list by `coef`. The methods `fitted` and
+`residuals` are also available.
+
+## Choosing the label order
+
+The order of the labels in the chain determines which labels can inform which.
+By default, the column order of `y` is used. `entropy_label_order` derives an
+order from the labels themselves.
+
+```{r}
+colnames(Y_train)[entropy_label_order(Y_train, method = "cebcc1")]
+```
+
+The `label_order` argument of `ccn` accepts either such a permutation or a
+function of `x` and `y` that returns one. A function is evaluated on the data
+that are actually used for fitting, which matters during cross-validation:
+the order is then recomputed on every set of training folds.
+
+```{r}
+cebcc1_order <- function(x, y) entropy_label_order(y, method = "cebcc1")
+```
+
+## Selecting the tuning parameters
+
+With rare labels, a random split into folds can leave a label without any
+positive examples in some fold. `multilabel_stratified_folds` assigns the
+observations to folds such that the proportion of every label stays close to
+its proportion in the full data.
+
+```{r}
+fold_id <- multilabel_stratified_folds(Y_train, folds = 5, seed = 1)
+round(t(sapply(1:5, function(k) colMeans(Y_train[fold_id == k, ]))), 2)
+```
+
+`ccn_cv` evaluates every combination of the candidate values for `q`,
+`lambda`, and `label_order`. Candidate label orders are given as a named list,
+in which `NULL` stands for the column order of `y`. By default, combinations
+are scored with the Hamming accuracy.
+
+```{r}
+cv <- ccn_cv(X_train, Y_train, q = c(1, 2), lambda = c(0.1, 0.5, 1),
+             label_order = list(default = NULL, cebcc1 = cebcc1_order),
+             fold_assignments = fold_id)
+cv$best_params
+```
+
+The selected model, refitted on all training data, is available as
+`cv$best_model`. The methods `predict`, `coef`, and `fitted` can also be
+applied to `cv` directly.
+
+## Prediction and evaluation
+
+`predict` returns predicted labels by default and predicted probabilities for
+`type = "response"`. Labels are obtained by comparing the probabilities with a
+threshold of 0.5. A vector of thresholds, one per label, can be supplied
+instead. Setting each threshold to the prevalence of the label in the training
+data helps to detect rare labels.
+
+```{r}
+Y_prob  <- predict(cv, newdata = X_test, type = "response")
+Y_class <- predict(cv, newdata = X_test)
+Y_class_prev <- predict(cv, newdata = X_test, threshold = colMeans(Y_train))
+```
+
+The package provides scoring functions for multi-label predictions. Those
+based on predicted labels depend on the threshold, while the log-likelihood
+and the mean area under the ROC curve use the probabilities.
+
+```{r}
+predictions <- list(threshold_0.5 = Y_class, prevalence = Y_class_prev)
+round(sapply(predictions, function(p) c(
+    hamming     = ccn_hamming_accuracy(Y_test, p),
+    exact_match = ccn_exact_match(Y_test, p),
+    micro_f1    = ccn_micro_f1(Y_test, p),
+    macro_f1    = ccn_macro_f1(Y_test, p))), 3)
+
+ccn_log_likelihood(Y_test, Y_prob)
+ccn_mean_auc(Y_test, Y_prob)
+```
+
+Any of these, or a function of your own, can be passed to the `scoring`
+argument of `ccn_cv`. A scoring function receives the arguments `y_true`,
+`y_class`, and `y_prob` and returns a single number, where larger is better.
+
+## Label interdependencies
+
+The matrix `C` contains the estimated effect of the prediction for one label
+on the prediction for another. Rows correspond to the predicted label and
+columns to the labels that precede it in the chain, so the matrix is lower
+triangular.
+
+```{r}
+round(coef(cv)$C, 3)
+```
+
+A positive entry means that a higher predicted presence of the earlier species
+increases the predicted presence of the later one, after accounting for the
+site characteristics. Because `C` is penalized together with `W`, the size of
+the entries depends on `lambda`.
+
+## Further reading
+
+The help pages of the functions used here contain further options and
+examples. `generate_dataset` creates a small synthetic data set that is
+convenient for experimenting with the package.
+
+## Reference
+
+Touw, D. J. W. and Van de Velden, M. (2025). Classifier chain networks for
+multi-label classification. *Expert Systems with Applications*, 286, 128048.
+<https://doi.org/10.1016/j.eswa.2025.128048>

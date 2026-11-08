@@ -1,3 +1,8 @@
+# CCNR 0.2.1
+
+* Added example for `multilabel_stratified_folds`.
+* Added a vignette with an example of an analysis of a multi-label data set.
+
 # CCNR 0.2.0
 
 * Initial release.

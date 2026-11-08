@@ -1,7 +1,7 @@
 Package: CCNR
 Type: Package
 Title: Classifier Chain Network for Multi-Label Classification
-Version: 0.2.0
+Version: 0.2.1
 Encoding: UTF-8
 Authors@R: c(person("Daniel J.W.", "Touw",
              email = "touw@ese.eur.nl",
@@ -22,7 +22,8 @@ Depends: R (>= 4.4.0)
 URL: https://github.com/djwtouw/CCNR
 BugReports: https://github.com/djwtouw/CCNR/issues
 Imports: Rcpp (>= 1.0.9), MASS, stats, utils
-Suggests: testthat (>= 3.0.0)
+Suggests: knitr, rmarkdown, testthat (>= 3.0.0)
+VignetteBuilder: knitr
 LazyData: true
 Config/testthat/edition: 3
 Config/build/clean-inst-doc: FALSE
