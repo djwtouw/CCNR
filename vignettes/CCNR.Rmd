@@ -117,8 +117,8 @@ cv$best_params
 ```
 
 The selected model, refitted on all training data, is available as
-`cv$best_model`. The methods `predict`, `coef`, and `fitted` can also be
-applied to `cv` directly.
+`cv$best_model`. The methods `predict`, `coef`, `fitted`, and `residuals` can
+also be applied to `cv` directly.
 
 ## Prediction and evaluation
 

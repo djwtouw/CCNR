@@ -15,8 +15,11 @@
 \arguments{
 \item{object}{A fitted \code{"ccn_cv"} object.}
 
-\item{newdata}{Numeric matrix of predictors (n x m). If \code{NULL}, returns
-the fitted values from training.}
+\item{newdata}{Numeric matrix or data frame of explanatory variables
+(n x m). If \code{NULL}, returns the fitted values from training. Columns
+are matched by position. When both the training data and \code{newdata}
+have column names, these must be identical and in the same order. A vector
+is read as a single observation.}
 
 \item{type}{Character; the type of prediction. \code{"class"} (default)
 returns a binary 0/1 matrix. \code{"response"} returns predicted
@@ -55,9 +58,10 @@ cv$best_model
 head(predict(cv, newdata = data$X))
 head(predict(cv, newdata = data$X, type = "response"))
 
-# Coefficients and fitted values of the best model
+# Coefficients, fitted probabilities and residuals of the best model
 coef(cv)
 head(fitted(cv))
+head(residuals(cv))
 
 # Use a different built-in scoring function for hyperparameter selection
 cv_f1 <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),

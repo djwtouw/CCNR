@@ -19,21 +19,24 @@ ccn_cv(
 )
 }
 \arguments{
-\item{x}{A numeric matrix of predictors (n x m).}
+\item{x}{A numeric matrix or data frame of explanatory variables (n x m).
+Factor and character columns are not accepted; encode them first, for
+example with \code{model.matrix()}.}
 
-\item{y}{A numeric matrix of binary responses (n x L).}
+\item{y}{A numeric or logical matrix of binary responses (n x L).}
 
 \item{q}{Numeric vector; candidate values for the Lq norm exponent. All
 combinations with \code{lambda} are evaluated.}
 
 \item{lambda}{Numeric vector; candidate regularization penalties. All
-combinations with \code{q} are evaluated.}
+combinations with \code{q} are evaluated. See \code{\link{ccn}} on how the
+penalty depends on the scale of \code{x}.}
 
-\item{folds}{Positive integer; number of cross-validation folds. Ignored if
-\code{fold_assignments} is provided. Default \code{5L}.}
+\item{folds}{Whole number of at least 2; number of cross-validation folds.
+Ignored if \code{fold_assignments} is provided. Default \code{5L}.}
 
 \item{fold_assignments}{Optional integer vector of length n assigning each
-observation to a fold. Allows the same folds to be reused across methods for
+observation to one of the folds \code{1:k}, with \code{k} at least 2. Allows the same folds to be reused across methods for
 fair comparison. If \code{NULL} (default), folds are generated internally by
 \code{\link{multilabel_stratified_folds}} using \code{seed}, so that the
 proportion of each label is kept roughly constant across folds.}
@@ -75,9 +78,10 @@ applied to the full data for this refit.}
 \code{lambda}, and the name of the best \code{label_order} when more than
 one candidate order was searched.}
 \item{scores}{A data frame with one row per hyperparameter combination
-and columns for \code{q}, \code{lambda}, mean score, and sd of score
-across folds, plus a \code{label_order} column when more than one
-candidate order was searched.}
+and columns for \code{q}, \code{lambda}, mean score, and sample
+standard deviation of the score across folds, plus a \code{label_order} column when more than one
+candidate order was searched. A combination with a failed fit or an
+\code{NA} score in any fold has \code{NA} scores and is not selected.}
 \item{label_orders}{The list of candidate orders that was searched, named
 as in the \code{label_order} column of \code{scores}.}
 \item{fold_assignments}{Integer vector mapping each observation to a
@@ -107,9 +111,10 @@ cv$best_model
 head(predict(cv, newdata = data$X))
 head(predict(cv, newdata = data$X, type = "response"))
 
-# Coefficients and fitted values of the best model
+# Coefficients, fitted probabilities and residuals of the best model
 coef(cv)
 head(fitted(cv))
+head(residuals(cv))
 
 # Use a different built-in scoring function for hyperparameter selection
 cv_f1 <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
@@ -138,5 +143,6 @@ cv_reuse$best_params
 functions; \code{\link{multilabel_stratified_folds}} for the fold generator;
 \code{\link{entropy_label_order}} for candidate chain orders;
 \code{\link{predict.ccn_cv}}, \code{\link{coef.ccn_cv}},
-\code{\link{fitted.ccn_cv}} for working with the best model.
+\code{\link{fitted.ccn_cv}}, \code{\link{residuals.ccn_cv}} for working
+with the best model.
 }

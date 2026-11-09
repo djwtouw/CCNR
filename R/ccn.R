@@ -1,7 +1,9 @@
 #' Fit a Classifier Chain Network
 #'
-#' @param x A numeric matrix of predictors (n x m).
-#' @param y A numeric matrix of binary responses (n x L).
+#' @param x A numeric matrix or data frame of explanatory variables (n x m).
+#' Factor and character columns are not accepted; encode them first, for
+#' example with \code{model.matrix()}.
+#' @param y A numeric or logical matrix of binary responses (n x L).
 #' @param q Numeric; exponent of the per-observation Lq norm used to aggregate
 #' label losses, must be \eqn{\geq 1}. Given per-label losses \eqn{h_{il}}, the
 #' per-observation loss is \eqn{\left(\sum_l h_{il}^q\right)^{1/q}}. When
@@ -9,11 +11,14 @@
 #' label losses receive disproportionately more weight. As \code{q}
 #' \eqn{\to \infty} this approaches the infinity norm, where only the
 #' worst-predicted label drives the loss.
-#' @param lambda Non-negative numeric; regularization penalty.
+#' @param lambda Non-negative numeric; regularization penalty. The penalty acts
+#' on all weights except the intercepts, so its effect depends on the scale of
+#' the explanatory variables. Consider standardizing \code{x}, for example with
+#' \code{scale()}, and applying the same centering and scaling to new data.
 #' @param label_order Integer vector of length L specifying the order in which
 #' labels are chained. Entry \code{label_order[l]} gives the index of the
 #' original column of \code{y} that occupies position \code{l} in the chain.
-#' Earlier labels in the chain are used as features when predicting later
+#' Earlier labels in the chain are used as explanatory variables for later
 #' labels. If \code{NULL} (default), the natural column order \code{1:L} is
 #' used. Outputs are always returned in the original column order of \code{y}.
 #'
@@ -49,21 +54,24 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
 
     ## Input coercion
     x <- as.matrix(x)
-    y <- as.matrix(y)
+    y <- .as_label_matrix(y)
 
     ## Input validation
-    stopifnot(nrow(x) == nrow(y))
+    if (nrow(x) != nrow(y))
+        stop("x has ", nrow(x), " rows but y has ", nrow(y))
     if (!is.numeric(x))          stop("x must be numeric")
-    if (!is.numeric(y))          stop("y must be numeric")
-    if (any(is.na(x)))           stop("x contains missing values")
-    if (any(is.na(y)))           stop("y contains missing values")
-    if (!all(y %in% c(0, 1)))    stop("y must contain only 0 and 1")
-    if (q < 1)                   stop("q must be at least 1")
-    if (lambda < 0)              stop("lambda must be non-negative")
-    if (!is.numeric(restart_scale) ||
-        restart_scale <= 0)      stop("restart_scale must be a positive number")
+    if (!all(is.finite(x)))      stop("x contains missing or infinite values")
+    if (!.is_single_number(q) || q < 1)
+        stop("q must be a single number of at least 1")
+    if (!.is_single_number(lambda) || lambda < 0)
+        stop("lambda must be a single non-negative number")
+    if (!.is_single_number(conv_tol) || conv_tol <= 0)
+        stop("conv_tol must be a single positive number")
+    if (!.is_single_number(restart_scale) || restart_scale <= 0)
+        stop("restart_scale must be a single positive number")
+    if (!.is_whole_number(n_starts, 1))
+        stop("n_starts must be a single whole number of at least 1")
     n_starts <- as.integer(n_starts)
-    if (n_starts < 1L)           stop("n_starts must be a positive integer")
 
     ## Derived dimensions
     L        <- ncol(y)
@@ -99,9 +107,9 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
 
     ## Build list of starting vectors
     # Start 1: sequential fit of each label. Each link is fitted on the original
-    # predictors augmented with the predicted probabilities of the earlier
-    # links; those probabilities (not the observed labels) are carried forward.
-    # Starts 2..n_starts: random.
+    # explanatory variables augmented with the predicted probabilities of the
+    # earlier links; those probabilities (not the observed labels) are carried
+    # forward. Starts 2..n_starts: random.
     base_init <- rep(0, n_params)
     x_ccs     <- x
     for (label_l in seq_len(L)) {
@@ -131,7 +139,7 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
         }
 
         # Enrich the design matrix with this link's predicted probabilities,
-        # used as features when initializing the later labels.
+        # used as explanatory variables when initializing the later labels.
         eta   <- fit_l[1] + x_ccs %*% fit_l[-1]
         eta   <- pmin(pmax(eta, -700), 700)
         x_ccs <- cbind(x_ccs, 1 / (1 + exp(-eta)))
@@ -220,9 +228,11 @@ ccn <- function(x, y, q, lambda, label_order = NULL, conv_tol = 1e-6,
             coefficients_flat  = best_fit$coefficients,
             label_order        = label_order,
             label_names        = label_names,
+            # NULL without column names, in which case predict() skips its
+            # check of the column names of newdata
+            variable_names     = colnames(x),
             y                  = y,
-            fitted.values      = (fitted_probs >= 0.5) * 1L,
-            fitted.probs       = fitted_probs,
+            fitted.values      = fitted_probs,
             n_params           = n_params,
             dims               = list(n = nrow(x), m = m, L = L),
             hyperparams        = list(q = q, lambda = lambda),

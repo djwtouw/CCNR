@@ -15,8 +15,11 @@
 \arguments{
 \item{object}{A fitted \code{"ccn"} object.}
 
-\item{newdata}{Numeric matrix of predictors (n x m). If \code{NULL}, returns
-the fitted values from training.}
+\item{newdata}{Numeric matrix or data frame of explanatory variables
+(n x m). If \code{NULL}, returns the fitted values from training. Columns
+are matched by position. When both the training data and \code{newdata}
+have column names, these must be identical and in the same order. A vector
+is read as a single observation.}
 
 \item{type}{Character; the type of prediction. \code{"class"} (default)
 returns a binary 0/1 matrix. \code{"response"} returns predicted

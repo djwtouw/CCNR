@@ -16,12 +16,13 @@
 #' beforehand for reproducibility); a \code{seed} gives a reproducible
 #' assignment.
 #'
-#' @param y A numeric matrix of binary responses (n x L), values in
-#' \code{{0, 1}}.
-#' @param folds Positive integer; number of folds. Default \code{5L}.
+#' @param y A numeric or logical matrix of binary responses (n x L),
+#' values in \code{{0, 1}}.
+#' @param folds Whole number of at least 2; number of folds. Default \code{5L}.
 #' @param seed Integer or \code{NULL}; random seed controlling the visiting
 #' order and the tie-breaking. \code{NULL} (default) uses the current random
-#' number stream.
+#' number stream. A seed leaves the random number stream of the caller as it
+#' was.
 #'
 #' @return An integer vector of length n assigning each observation to a fold
 #' in \code{1:folds}.
@@ -38,22 +39,19 @@
 #' @export
 multilabel_stratified_folds <- function(y, folds = 5L, seed = NULL) {
     ## Input coercion and validation
-    y <- as.matrix(y)
-    if (!is.numeric(y))       stop("y must be numeric")
-    if (any(is.na(y)))        stop("y contains missing values")
-    if (!all(y %in% c(0, 1))) stop("y must contain only 0 and 1")
+    y <- .as_label_matrix(y)
 
-    k <- as.integer(folds)
     n <- nrow(y)
-    if (is.na(k) || k < 2L) stop("folds must be at least 2")
-    if (k > n)              stop("folds cannot exceed the number of observations")
+    if (!.is_whole_number(folds, 2))
+        stop("folds must be a single whole number of at least 2")
+    if (folds > n) stop("folds cannot exceed the number of observations")
 
     ## Visiting order: a fresh shuffle, or a reproducible one from a seed. The
-    ## same stream also drives the random tie-breaking below.
-    if (!is.null(seed)) set.seed(seed)
-    visit <- sample.int(n)
-
-    .iterative_stratification(y, k, visit)
+    ## same stream also drives the random tie-breaking.
+    .with_seed(seed, {
+        visit <- sample.int(n)
+        .iterative_stratification(y, as.integer(folds), visit)
+    })
 }
 
 

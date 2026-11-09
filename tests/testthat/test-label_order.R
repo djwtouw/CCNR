@@ -56,6 +56,14 @@ test_that("constant labels do not produce NaN", {
   expect_false(anyNA(conditional_entropy_matrix(matrix(0, 5, 3))))
 })
 
+test_that("the matrix has no negative entries", {
+  # Rounding pushes one entry of these data just below zero
+  set.seed(1)
+  y <- generate_dataset(200)$Y
+  y[, 2] <- 0
+  expect_true(all(conditional_entropy_matrix(y) >= 0))
+})
+
 test_that("the labels are named, falling back to L1..LL", {
   y <- random_labels(40, 3, 1)
   expect_equal(dimnames(conditional_entropy_matrix(y)),
@@ -87,6 +95,12 @@ test_that("column names of y are carried over", {
   colnames(y) <- c("a", "b", "c")
   expect_equal(dimnames(conditional_entropy_matrix(y)),
                list(c("a", "b", "c"), c("a", "b", "c")))
+})
+
+test_that("logical y gives the same matrix as 0/1 y", {
+  y <- random_labels(50, 3, 11)
+  expect_equal(conditional_entropy_matrix(y == 1),
+               conditional_entropy_matrix(y))
 })
 
 test_that("conditional_entropy_matrix validates its input", {
@@ -146,6 +160,11 @@ test_that("ties are resolved toward the lowest remaining index", {
              c(1, 1, 1), c(1, 0, 0), c(0, 1, 0), c(0, 0, 1))
   expect_equal(entropy_label_order(y, "cebcc3"), c(1L, 2L, 3L))
   expect_equal(entropy_label_order(y, "cebcc1"), c(3L, 2L, 1L))
+})
+
+test_that("logical y gives the same order as 0/1 y", {
+  y <- random_labels(50, 4, 11)
+  expect_equal(entropy_label_order(y == 1), entropy_label_order(y))
 })
 
 test_that("a single label is handled", {
@@ -217,7 +236,7 @@ test_that("a permuted chain does not permute the output columns", {
   fit  <- ccn(data$X, data$Y, q = 1, lambda = 0.01, label_order = rule)
 
   expect_equal(fit$label_order, rev(seq_len(ncol(data$Y))))
-  expect_equal(dim(fitted(fit, type = "response")), dim(data$Y))
+  expect_equal(dim(fitted(fit)), dim(data$Y))
   expect_equal(dim(predict(fit, newdata = data$X)), dim(data$Y))
 })
 

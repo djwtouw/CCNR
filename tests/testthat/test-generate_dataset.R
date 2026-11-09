@@ -22,4 +22,5 @@ test_that("generate_dataset rejects invalid n", {
   expect_error(generate_dataset(-10))
   expect_error(generate_dataset("a"))
   expect_error(generate_dataset(c(10, 20)))
+  expect_error(generate_dataset(2.5))
 })

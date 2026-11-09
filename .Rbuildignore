@@ -1,7 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.positai$
-^test\.R$
 ^README$
 ^\.gitattributes$
 ^\.github$

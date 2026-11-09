@@ -4,22 +4,21 @@
 \alias{fitted.ccn}
 \title{Extract fitted values from a Classifier Chain Network}
 \usage{
-\method{fitted}{ccn}(object, type = c("class", "response"), ...)
+\method{fitted}{ccn}(object, ...)
 }
 \arguments{
 \item{object}{A fitted \code{"ccn"} object.}
 
-\item{type}{Character; \code{"class"} (default) returns binary predictions,
-\code{"response"} returns probabilities.}
-
 \item{...}{Further arguments passed to or from other methods.}
 }
 \value{
-An n x L matrix of fitted values in the original column order of
-\code{y}.
+An n x L matrix of fitted probabilities in the original column
+order of \code{y}.
 }
 \description{
-Extract fitted values from a Classifier Chain Network
+Returns the fitted probabilities of the training data. For predicted
+labels, use \code{\link{predict.ccn}}, which also takes a decision
+threshold.
 }
 \examples{
 # Generate sample data
@@ -41,9 +40,9 @@ summary(fit, which = c("b", "C"))
 # variables (W), and coefficients of the label predictions (C)
 coef(fit)
 
-# Fitted classes and fitted probabilities
+# Fitted probabilities; predict() without newdata gives the fitted classes
 head(fitted(fit))
-head(fitted(fit, type = "response"))
+head(predict(fit))
 
 # Response residuals: y minus the fitted probabilities
 head(residuals(fit))

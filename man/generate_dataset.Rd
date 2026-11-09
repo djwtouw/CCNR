@@ -7,13 +7,14 @@
 generate_dataset(n)
 }
 \arguments{
-\item{n}{Integer. Number of observations.}
+\item{n}{Whole number of at least 1. Number of observations.}
 }
 \value{
 A list with:
 \describe{
 \item{X}{Numeric matrix of explanatory variables (\eqn{n \times 3}).}
-\item{Y}{Binary integer matrix of multilabel outcomes (\eqn{n \times 4}).}
+\item{Y}{Numeric matrix of binary (0/1) multilabel outcomes
+(\eqn{n \times 4}).}
 }
 }
 \description{

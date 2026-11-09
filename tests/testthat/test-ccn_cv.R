@@ -78,6 +78,44 @@ test_that("ccn_cv rejects folds > n", {
   expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, folds = n + 1L))
 })
 
+test_that("ccn_cv rejects a fractional number of folds", {
+  expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, folds = 2.5),
+               "whole number")
+})
+
+test_that("ccn_cv rejects invalid fold_assignments", {
+  one_fold <- rep(1L, n)
+  with_na  <- c(NA, rep(1:2, length.out = n - 1L))
+  fraction <- c(1.5, rep(1:2, length.out = n - 1L))
+  expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, fold_assignments = one_fold),
+               "at least 2 folds")
+  expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, fold_assignments = with_na),
+               "whole numbers without missing values")
+  expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, fold_assignments = fraction),
+               "whole numbers without missing values")
+})
+
+test_that("ccn_cv rejects a scoring function without the named arguments", {
+  positional <- function(a, b, c) mean(a == b)
+  expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, folds = 3L,
+                      scoring = positional),
+               "named arguments y_true, y_class and y_prob")
+})
+
+test_that("ccn_cv rejects a scoring function that returns several values", {
+  per_label <- function(y_true, y_class, ...) colMeans(y_true == y_class)
+  expect_error(ccn_cv(x, y, q = 1, lambda = 0.01, folds = 3L, seed = 1L,
+                      scoring = per_label),
+               "single number")
+})
+
+test_that("ccn_cv with a seed leaves the random number stream unchanged", {
+  set.seed(10); expected <- stats::runif(1)
+  set.seed(10)
+  ccn_cv(x, y, q = 1, lambda = 0.01, folds = 3L, seed = 1L)
+  expect_equal(stats::runif(1), expected)
+})
+
 test_that("ccn_cv rejects non-binary y", {
   y_cont <- y + 0.5
   expect_error(ccn_cv(x, y_cont, q = 1, lambda = 0.01, folds = 3L))
@@ -85,6 +123,64 @@ test_that("ccn_cv rejects non-binary y", {
 
 test_that("ccn_cv rejects q < 1", {
   expect_error(ccn_cv(x, y, q = 0.5, lambda = 0.01, folds = 3L))
+})
+
+test_that("ccn_cv rejects missing or non-finite q and lambda", {
+  expect_error(ccn_cv(x, y, q = c(1, NA), lambda = 0.01, folds = 3L),
+               "values of q must be finite")
+  expect_error(ccn_cv(x, y, q = 1, lambda = c(0.1, Inf), folds = 3L),
+               "values of lambda must be finite")
+})
+
+test_that("ccn_cv reports a row count mismatch", {
+  expect_error(ccn_cv(x[-1, ], y, q = 1, lambda = 0.01, folds = 3L),
+               "rows but y has")
+})
+
+test_that("ccn_cv rejects infinite values in x", {
+  x_inf <- x; x_inf[1, 1] <- Inf
+  expect_error(ccn_cv(x_inf, y, q = 1, lambda = 0.01, folds = 3L),
+               "missing or infinite")
+})
+
+test_that("ccn_cv does not select a grid point with a failed fit", {
+  # Unequal folds make the training size identify the fold, so this order
+  # fails in the first fold only
+  folds <- rep(1:3, c(10L, 15L, 15L))
+  flaky <- function(x, y) {
+    if (nrow(x) == 30L) stop("fails in fold 1")
+    seq_len(ncol(y))
+  }
+  expect_warning(
+    cv <- ccn_cv(x, y, q = 1, lambda = 0.01, fold_assignments = folds,
+                 label_order = list(stable = NULL, flaky = flaky)),
+    "fold 1 failed"
+  )
+  expect_true(is.na(cv$scores$mean_score[cv$scores$label_order == "flaky"]))
+  expect_equal(cv$best_params$label_order, "stable")
+})
+
+test_that("ccn_cv stops when every fit fails", {
+  broken <- function(x, y) stop("always fails")
+  expect_error(
+    suppressWarnings(ccn_cv(x, y, q = 1, lambda = 0.01, folds = 3L,
+                            label_order = broken)),
+    "no combination of tuning parameters could be scored"
+  )
+})
+
+test_that("an NA score in one fold makes the grid point NA", {
+  # The scoring function returns NA for the 10 observations of fold 1, which
+  # affects every grid point, so no combination can be selected
+  folds <- rep(1:3, c(10L, 15L, 15L))
+  na_in_fold_1 <- function(y_true, y_class, ...) {
+    if (nrow(y_true) == 10L) NA_real_ else mean(y_true == y_class)
+  }
+  expect_error(
+    ccn_cv(x, y, q = 1, lambda = c(0.01, 0.1), fold_assignments = folds,
+           scoring = na_in_fold_1),
+    "returned NA"
+  )
 })
 
 test_that("ccn_cv rejects negative lambda", {
@@ -124,6 +220,9 @@ test_that("coef.ccn_cv matches coef on the best model", {
 test_that("fitted.ccn_cv matches fitted on the best model", {
   cv <- ccn_cv(x, y, q = 1, lambda = 0.01, folds = 3L, seed = 1L)
   expect_equal(fitted(cv), fitted(cv$best_model))
-  expect_equal(fitted(cv, type = "response"),
-               fitted(cv$best_model, type = "response"))
+})
+
+test_that("residuals.ccn_cv matches residuals on the best model", {
+  cv <- ccn_cv(x, y, q = 1, lambda = 0.01, folds = 3L, seed = 1L)
+  expect_equal(residuals(cv), residuals(cv$best_model))
 })

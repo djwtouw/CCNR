@@ -119,19 +119,20 @@ coef.ccn <- function(object, ...) {
 
 #' Extract fitted values from a Classifier Chain Network
 #'
+#' Returns the fitted probabilities of the training data. For predicted
+#' labels, use \code{\link{predict.ccn}}, which also takes a decision
+#' threshold.
+#'
 #' @param object A fitted \code{"ccn"} object.
-#' @param type Character; \code{"class"} (default) returns binary predictions,
-#' \code{"response"} returns probabilities.
 #' @param ... Further arguments passed to or from other methods.
-#' @return An n x L matrix of fitted values in the original column order of
-#' \code{y}.
+#' @return An n x L matrix of fitted probabilities in the original column
+#' order of \code{y}.
 #'
 #' @example inst/doc/examples/example-methods.R
 #'
 #' @export
-fitted.ccn <- function(object, type = c("class", "response"), ...) {
-    type <- match.arg(type)
-    if (type == "response") object$fitted.probs else object$fitted.values
+fitted.ccn <- function(object, ...) {
+    object$fitted.values
 }
 
 
@@ -149,7 +150,7 @@ fitted.ccn <- function(object, type = c("class", "response"), ...) {
 #'
 #' @export
 residuals.ccn <- function(object, ...) {
-    object$y - object$fitted.probs
+    object$y - object$fitted.values
 }
 
 
@@ -220,21 +221,39 @@ coef.ccn_cv <- function(object, ...) {
 
 #' Extract Fitted Values from a Cross-validated Classifier Chain Network
 #'
-#' Extracts the fitted values of the best model selected by cross-validation,
-#' which is refitted on the full data. Equivalent to calling
+#' Extracts the fitted probabilities of the best model selected by
+#' cross-validation, which is refitted on the full data. Equivalent to calling
 #' \code{\link{fitted.ccn}} on \code{object$best_model}.
 #'
 #' @param object A fitted \code{"ccn_cv"} object.
-#' @param type Character; \code{"class"} (default) returns binary predictions,
-#' \code{"response"} returns probabilities.
 #' @param ... Further arguments passed to \code{\link{fitted.ccn}}.
-#' @return An n x L matrix of fitted values in the original column order of
-#' \code{y}.
+#' @return An n x L matrix of fitted probabilities in the original column
+#' order of \code{y}.
 #' @seealso \code{\link{ccn_cv}}, \code{\link{fitted.ccn}}.
 #'
 #' @example inst/doc/examples/example-ccn_cv.R
 #'
 #' @export
-fitted.ccn_cv <- function(object, type = c("class", "response"), ...) {
-    fitted(object$best_model, type = type, ...)
+fitted.ccn_cv <- function(object, ...) {
+    fitted(object$best_model, ...)
+}
+
+
+#' Extract Residuals from a Cross-validated Classifier Chain Network
+#'
+#' Extracts the residuals of the best model selected by cross-validation, which
+#' is refitted on the full data. Equivalent to calling
+#' \code{\link{residuals.ccn}} on \code{object$best_model}.
+#'
+#' @param object A fitted \code{"ccn_cv"} object.
+#' @param ... Further arguments passed to \code{\link{residuals.ccn}}.
+#' @return An n x L numeric matrix of response residuals (\code{y - fitted
+#' probabilities}) in the original column order of \code{y}.
+#' @seealso \code{\link{ccn_cv}}, \code{\link{residuals.ccn}}.
+#'
+#' @example inst/doc/examples/example-ccn_cv.R
+#'
+#' @export
+residuals.ccn_cv <- function(object, ...) {
+    residuals(object$best_model, ...)
 }

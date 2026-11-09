@@ -66,6 +66,22 @@ test_that("different seeds give different (but valid) assignments", {
   expect_false(isTRUE(all.equal(a, b)))
 })
 
+test_that("a seed leaves the random number stream unchanged", {
+  set.seed(10); expected <- stats::runif(1)
+  set.seed(10)
+  multilabel_stratified_folds(y, folds = 5L, seed = 42L)
+  expect_equal(stats::runif(1), expected)
+})
+
+test_that("a seed leaves an unseeded session unseeded", {
+  had_seed <- exists(".Random.seed", envir = globalenv())
+  old <- get0(".Random.seed", envir = globalenv())
+  on.exit(if (had_seed) assign(".Random.seed", old, envir = globalenv()))
+  if (had_seed) rm(".Random.seed", envir = globalenv())
+  multilabel_stratified_folds(y, folds = 5L, seed = 42L)
+  expect_false(exists(".Random.seed", envir = globalenv()))
+})
+
 test_that("seed = NULL draws from the ambient random number stream", {
   set.seed(123); a <- multilabel_stratified_folds(y, folds = 5L)
   set.seed(123); b <- multilabel_stratified_folds(y, folds = 5L)
@@ -82,6 +98,10 @@ test_that("multilabel_stratified_folds rejects folds < 2", {
 
 test_that("multilabel_stratified_folds rejects folds > n", {
   expect_error(multilabel_stratified_folds(y, folds = n + 1L))
+})
+
+test_that("multilabel_stratified_folds rejects a fractional number of folds", {
+  expect_error(multilabel_stratified_folds(y, folds = 2.5), "whole number")
 })
 
 test_that("multilabel_stratified_folds rejects non-binary y", {
@@ -103,6 +123,13 @@ test_that("ties are broken randomly", {
   expect_equal(as.integer(table(b)), rep(8L, 5L))
 })
 
+# ---- Logical input -----------------------------------------------------
+
+test_that("logical y gives the same folds as 0/1 y", {
+  expect_equal(multilabel_stratified_folds(y == 1, folds = 5L, seed = 1L),
+               multilabel_stratified_folds(y, folds = 5L, seed = 1L))
+})
+
 # ---- Integration with ccn_cv -------------------------------------------
 
 test_that("ccn_cv uses stratified folds by default", {
@@ -112,4 +139,12 @@ test_that("ccn_cv uses stratified folds by default", {
   # Folds are the stratified assignment, not a plain shuffle.
   expect_equal(cv$fold_assignments,
                multilabel_stratified_folds(d$Y, folds = 5L, seed = 1L))
+})
+
+test_that("ccn_cv gives the same results for logical and 0/1 y", {
+  set.seed(3)
+  d <- generate_dataset(n = 120)
+  cv_num <- ccn_cv(d$X, d$Y, q = 1, lambda = 0.01, folds = 3L, seed = 1L)
+  cv_lgl <- ccn_cv(d$X, d$Y == 1, q = 1, lambda = 0.01, folds = 3L, seed = 1L)
+  expect_equal(cv_lgl$scores, cv_num$scores)
 })

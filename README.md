@@ -38,7 +38,7 @@ The main functions are `ccn()`, which fits a classifier chain network for a give
 ```r
 library(CCNR)
 
-# Generate sample data: n observations, 3 predictors, 4 binary labels
+# Generate sample data: n observations, 3 explanatory variables, 4 binary labels
 set.seed(1)
 data <- generate_dataset(n = 200)
 
@@ -73,8 +73,10 @@ A Python implementation with the same functionality is available as [CCNPy](http
 | `predict(fit, type = "response")` | `model.predict_proba(X)` |
 | `coef(fit)` | `model.coef_` |
 | `ccn_cv(...)` | `ccn_cv(...)` or `GridSearchCV` |
+| `multilabel_stratified_folds(y, folds)` | `MultilabelStratifiedKFold(n_splits)` |
 | `ccn_hamming_accuracy`, ... | `ccnpy.metrics.*` |
 | `generate_dataset(n)` | `generate_dataset(n)` |
+| `data(amphibians)` | `load_amphibians()` |
 | `entropy_label_order(y, method)` | `entropy_label_order(Y, method=...)` |
 | `conditional_entropy_matrix(y)` | `conditional_entropy_matrix(Y)` |
 

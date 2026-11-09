@@ -10,19 +10,20 @@
 #' coefficients drawn from \eqn{U(-2, 2)} and optional dependence on all
 #' previous labels via coefficients drawn from \eqn{U(-4, 4)}.
 #'
-#' @param n Integer. Number of observations.
+#' @param n Whole number of at least 1. Number of observations.
 #'
 #' @return A list with:
 #' \describe{
 #'   \item{X}{Numeric matrix of explanatory variables (\eqn{n \times 3}).}
-#'   \item{Y}{Binary integer matrix of multilabel outcomes (\eqn{n \times 4}).}
+#'   \item{Y}{Numeric matrix of binary (0/1) multilabel outcomes
+#'     (\eqn{n \times 4}).}
 #' }
 #'
 #' @example inst/doc/examples/example-generate_dataset.R
 #'
 #' @export
 generate_dataset <- function(n) {
-    if (!is.numeric(n) || length(n) != 1 || n <= 0) {
+    if (!.is_whole_number(n, 1)) {
         stop("'n' must be a positive integer.")
     }
 

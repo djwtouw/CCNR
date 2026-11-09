@@ -3,16 +3,19 @@
 #' Performs k-fold cross-validation over a grid of hyperparameters, returning
 #' the best model refitted on the full data.
 #'
-#' @param x A numeric matrix of predictors (n x m).
-#' @param y A numeric matrix of binary responses (n x L).
+#' @param x A numeric matrix or data frame of explanatory variables (n x m).
+#' Factor and character columns are not accepted; encode them first, for
+#' example with \code{model.matrix()}.
+#' @param y A numeric or logical matrix of binary responses (n x L).
 #' @param q Numeric vector; candidate values for the Lq norm exponent. All
 #' combinations with \code{lambda} are evaluated.
 #' @param lambda Numeric vector; candidate regularization penalties. All
-#' combinations with \code{q} are evaluated.
-#' @param folds Positive integer; number of cross-validation folds. Ignored if
-#' \code{fold_assignments} is provided. Default \code{5L}.
+#' combinations with \code{q} are evaluated. See \code{\link{ccn}} on how the
+#' penalty depends on the scale of \code{x}.
+#' @param folds Whole number of at least 2; number of cross-validation folds.
+#' Ignored if \code{fold_assignments} is provided. Default \code{5L}.
 #' @param fold_assignments Optional integer vector of length n assigning each
-#' observation to a fold. Allows the same folds to be reused across methods for
+#' observation to one of the folds \code{1:k}, with \code{k} at least 2. Allows the same folds to be reused across methods for
 #' fair comparison. If \code{NULL} (default), folds are generated internally by
 #' \code{\link{multilabel_stratified_folds}} using \code{seed}, so that the
 #' proportion of each label is kept roughly constant across folds.
@@ -48,9 +51,10 @@
 #'     \code{lambda}, and the name of the best \code{label_order} when more than
 #'     one candidate order was searched.}
 #'   \item{scores}{A data frame with one row per hyperparameter combination
-#'     and columns for \code{q}, \code{lambda}, mean score, and sd of score
-#'     across folds, plus a \code{label_order} column when more than one
-#'     candidate order was searched.}
+#'     and columns for \code{q}, \code{lambda}, mean score, and sample
+#'     standard deviation of the score across folds, plus a \code{label_order} column when more than one
+#'     candidate order was searched. A combination with a failed fit or an
+#'     \code{NA} score in any fold has \code{NA} scores and is not selected.}
 #'   \item{label_orders}{The list of candidate orders that was searched, named
 #'     as in the \code{label_order} column of \code{scores}.}
 #'   \item{fold_assignments}{Integer vector mapping each observation to a
@@ -63,7 +67,8 @@
 #' functions; \code{\link{multilabel_stratified_folds}} for the fold generator;
 #' \code{\link{entropy_label_order}} for candidate chain orders;
 #' \code{\link{predict.ccn_cv}}, \code{\link{coef.ccn_cv}},
-#' \code{\link{fitted.ccn_cv}} for working with the best model.
+#' \code{\link{fitted.ccn_cv}}, \code{\link{residuals.ccn_cv}} for working
+#' with the best model.
 #'
 #' @example inst/doc/examples/example-ccn_cv.R
 #'
@@ -73,38 +78,44 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
                    label_order = NULL, verbose = 0, ...) {
     ## Input coercion
     x <- as.matrix(x)
-    y <- as.matrix(y)
+    y <- .as_label_matrix(y)
 
     ## Input validation
-    stopifnot(nrow(x) == nrow(y))
+    if (nrow(x) != nrow(y))
+        stop("x has ", nrow(x), " rows but y has ", nrow(y))
     if (!is.numeric(x))        stop("x must be numeric")
-    if (!is.numeric(y))        stop("y must be numeric")
-    if (any(is.na(x)))         stop("x contains missing values")
-    if (any(is.na(y)))         stop("y contains missing values")
-    if (!all(y %in% c(0, 1)))  stop("y must contain only 0 and 1")
-    if (!is.numeric(q) || any(q < 1))
-        stop("all values of q must be >= 1")
-    if (!is.numeric(lambda) || any(lambda < 0))
-        stop("all values of lambda must be non-negative")
+    if (!all(is.finite(x)))    stop("x contains missing or infinite values")
+    if (!is.numeric(q) || length(q) == 0L || !all(is.finite(q)) || any(q < 1))
+        stop("all values of q must be finite numbers of at least 1")
+    if (!is.numeric(lambda) || length(lambda) == 0L ||
+        !all(is.finite(lambda)) || any(lambda < 0))
+        stop("all values of lambda must be finite non-negative numbers")
     if (!is.function(scoring)) stop("scoring must be a function")
+    scoring_args <- names(formals(scoring))
+    if (!("..." %in% scoring_args) &&
+        !all(c("y_true", "y_class", "y_prob") %in% scoring_args))
+        stop("scoring must accept the named arguments y_true, y_class and ",
+             "y_prob, or absorb the ones it does not use in ...")
 
     n <- nrow(x)
 
     ## Fold assignments
     if (!is.null(fold_assignments)) {
+        if (!is.numeric(fold_assignments) || anyNA(fold_assignments) ||
+            any(fold_assignments != round(fold_assignments)))
+            stop("fold_assignments must be whole numbers without missing ",
+                 "values")
         fold_assignments <- as.integer(fold_assignments)
         if (length(fold_assignments) != n)
             stop("fold_assignments must have length n (", n, ")")
         if (!setequal(fold_assignments, seq_len(max(fold_assignments))))
             stop("fold_assignments must contain consecutive integers from 1 to k")
-        folds <- max(fold_assignments)
     } else {
-        folds <- as.integer(folds)
-        if (folds < 2L)      stop("folds must be at least 2")
-        if (folds > n)       stop("folds cannot exceed the number of observations")
         fold_assignments <- multilabel_stratified_folds(y, folds = folds,
                                                         seed = seed)
     }
+    folds <- max(fold_assignments)
+    if (folds < 2L) stop("fold_assignments must use at least 2 folds")
 
     ## Candidate label orders
     order_candidates <- .label_order_candidates(label_order, ncol(y))
@@ -154,21 +165,29 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
             ## Both predictions are passed as promises. A scoring function that
             ## leaves one of them in its ... never evaluates it, so that call to
             ## predict is never made. Do not force these arguments here.
-            fold_scores[k] <- scoring(
+            score_k <- scoring(
                 y_true  = y[test_idx, , drop = FALSE],
                 y_class = predict(fit_k, newdata = x[test_idx, , drop = FALSE],
                                   type = "class"),
                 y_prob  = predict(fit_k, newdata = x[test_idx, , drop = FALSE],
                                   type = "response")
             )
+            ## A logical NA is allowed: it marks the fold as not scored
+            if (length(score_k) != 1L ||
+                (!is.numeric(score_k) && !identical(score_k, NA)))
+                stop("scoring must return a single number, not a value of ",
+                     "length ", length(score_k))
+            fold_scores[k] <- score_k
         }
 
+        ## A fold without a score, from a failed fit or an NA score, makes the
+        ## grid point NA, so that it cannot win on the folds that were scored
         grid_scores[[g]] <- data.frame(
             q           = q_g,
             lambda      = lambda_g,
             label_order = order_lab,
-            mean_score  = mean(fold_scores, na.rm = TRUE),
-            sd_score    = stats::sd(fold_scores, na.rm = TRUE),
+            mean_score  = mean(fold_scores),
+            sd_score    = stats::sd(fold_scores),
             stringsAsFactors = FALSE
         )
         
@@ -179,6 +198,10 @@ ccn_cv <- function(x, y, q, lambda, folds = 5L, fold_assignments = NULL,
     scores <- do.call(rbind, grid_scores)
 
     ## Find best hyperparameters
+    if (!any(is.finite(scores$mean_score)))
+        stop("no combination of tuning parameters could be scored in every ",
+             "fold: a fit failed (see the warnings) or the scoring function ",
+             "returned NA")
     best_idx   <- which.max(scores$mean_score)
     param_cols <- c("q", "lambda", "label_order")
 

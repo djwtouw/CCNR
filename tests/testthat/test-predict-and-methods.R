@@ -11,8 +11,10 @@ fit_lo     <- ccn(x, y_named, q = 1, lambda = 0.01, label_order = c(3L, 1L, 2L))
 
 # ---- predict.ccn -------------------------------------------------------
 
-test_that("predict with no newdata matches stored fitted.values", {
-  expect_equal(predict(fit, type = "class"), fit$fitted.values)
+test_that("predict with no newdata thresholds the fitted probabilities", {
+  expect_equal(predict(fit, type = "response"), fit$fitted.values)
+  expect_equal(predict(fit, type = "class"), (fit$fitted.values >= 0.5) * 1L)
+  expect_equal(predict(fit, threshold = 0.9), (fit$fitted.values >= 0.9) * 1L)
 })
 
 test_that("predict type='response' returns [0,1] probabilities of dim n x L", {
@@ -65,6 +67,63 @@ test_that("predict rejects newdata with wrong number of columns", {
   expect_error(predict(fit, newdata = bad))
 })
 
+test_that("predict rejects column names in a different order", {
+  x_named <- x; colnames(x_named) <- c("u", "v")
+  fit_x <- ccn(x_named, y, q = 1, lambda = 0.01)
+  expect_error(predict(fit_x, newdata = x_named[, c("v", "u")]),
+               "same order: u, v")
+})
+
+test_that("predict rejects different column names", {
+  x_named <- x; colnames(x_named) <- c("u", "v")
+  fit_x <- ccn(x_named, y, q = 1, lambda = 0.01)
+  bad <- x_named; colnames(bad) <- c("u", "z")
+  expect_error(predict(fit_x, newdata = bad), "column names of newdata")
+})
+
+test_that("predict accepts duplicate column names in the training order", {
+  x_dup <- x; colnames(x_dup) <- c("a", "a")
+  fit_dup <- ccn(x_dup, y, q = 1, lambda = 0.01)
+  expect_equal(predict(fit_dup, newdata = x_dup, type = "response"),
+               fit_dup$fitted.values)
+})
+
+test_that("predict matches by position when either side lacks names", {
+  x_named <- x; colnames(x_named) <- c("u", "v")
+  fit_x <- ccn(x_named, y, q = 1, lambda = 0.01)
+  expect_equal(predict(fit_x, newdata = unname(x_named), type = "response"),
+               predict(fit_x, newdata = x_named, type = "response"))
+  expect_equal(predict(fit, newdata = x_named, type = "response"),
+               predict(fit, newdata = x, type = "response"))
+})
+
+test_that("predict reads a vector as a single observation", {
+  expect_equal(predict(fit, newdata = x[1, ], type = "response"),
+               predict(fit, newdata = x[1, , drop = FALSE], type = "response"))
+})
+
+test_that("predict checks the names of a vector", {
+  x_named <- x; colnames(x_named) <- c("u", "v")
+  fit_x <- ccn(x_named, y, q = 1, lambda = 0.01)
+  expect_equal(predict(fit_x, newdata = x_named[1, ], type = "response"),
+               predict(fit_x, newdata = x_named[1, , drop = FALSE],
+                       type = "response"))
+  expect_error(predict(fit_x, newdata = c(v = x[1, 2], u = x[1, 1])),
+               "same order")
+})
+
+test_that("predict explains a vector of the wrong length", {
+  expect_error(predict(fit, newdata = c(1, 2, 3)), "one-column matrix")
+  fit_1 <- ccn(x[, 1, drop = FALSE], y, q = 1, lambda = 0.01)
+  expect_error(predict(fit_1, newdata = x[1:5, 1]), "one-column matrix")
+  expect_equal(dim(predict(fit_1, newdata = x[1:5, 1, drop = FALSE])), c(5L, L))
+})
+
+test_that("predict rejects missing or infinite values in newdata", {
+  expect_error(predict(fit, newdata = rbind(c(Inf, 0))), "missing or infinite")
+  expect_error(predict(fit, newdata = rbind(c(NA, 0))), "missing or infinite")
+})
+
 test_that("predict rejects threshold outside (0, 1)", {
   expect_error(predict(fit, threshold = 0))
   expect_error(predict(fit, threshold = 1))
@@ -74,16 +133,9 @@ test_that("predict rejects threshold outside (0, 1)", {
 
 # ---- fitted.ccn --------------------------------------------------------
 
-test_that("fitted type='class' matches fit$fitted.values", {
-  expect_equal(fitted(fit, type = "class"), fit$fitted.values)
-})
-
-test_that("fitted type='response' matches fit$fitted.probs", {
-  expect_equal(fitted(fit, type = "response"), fit$fitted.probs)
-})
-
-test_that("fitted default type is 'class'", {
+test_that("fitted returns the fitted probabilities", {
   expect_equal(fitted(fit), fit$fitted.values)
+  expect_equal(fitted(fit), predict(fit, newdata = x, type = "response"))
 })
 
 # ---- residuals.ccn -----------------------------------------------------
@@ -93,7 +145,7 @@ test_that("residuals has dim n x L", {
 })
 
 test_that("residuals equals y minus fitted probabilities", {
-  expect_equal(residuals(fit), fit$y - fit$fitted.probs)
+  expect_equal(residuals(fit), fit$y - fitted(fit))
 })
 
 # ---- coef.ccn ----------------------------------------------------------

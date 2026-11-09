@@ -16,9 +16,11 @@ ccn(
 )
 }
 \arguments{
-\item{x}{A numeric matrix of predictors (n x m).}
+\item{x}{A numeric matrix or data frame of explanatory variables (n x m).
+Factor and character columns are not accepted; encode them first, for
+example with \code{model.matrix()}.}
 
-\item{y}{A numeric matrix of binary responses (n x L).}
+\item{y}{A numeric or logical matrix of binary responses (n x L).}
 
 \item{q}{Numeric; exponent of the per-observation Lq norm used to aggregate
 label losses, must be \eqn{\geq 1}. Given per-label losses \eqn{h_{il}}, the
@@ -28,12 +30,15 @@ label losses receive disproportionately more weight. As \code{q}
 \eqn{\to \infty} this approaches the infinity norm, where only the
 worst-predicted label drives the loss.}
 
-\item{lambda}{Non-negative numeric; regularization penalty.}
+\item{lambda}{Non-negative numeric; regularization penalty. The penalty acts
+on all weights except the intercepts, so its effect depends on the scale of
+the explanatory variables. Consider standardizing \code{x}, for example with
+\code{scale()}, and applying the same centering and scaling to new data.}
 
 \item{label_order}{Integer vector of length L specifying the order in which
 labels are chained. Entry \code{label_order[l]} gives the index of the
 original column of \code{y} that occupies position \code{l} in the chain.
-Earlier labels in the chain are used as features when predicting later
+Earlier labels in the chain are used as explanatory variables for later
 labels. If \code{NULL} (default), the natural column order \code{1:L} is
 used. Outputs are always returned in the original column order of \code{y}.
 
@@ -73,12 +78,13 @@ fit
 # Inspect the estimated coefficients
 coef(fit)
 
-# In-sample predicted classes and probabilities
+# In-sample fitted probabilities and predicted classes
 head(fitted(fit))
-head(fitted(fit, type = "response"))
+head(predict(fit))
 
 # Fit with a custom label order: labels earlier in the chain are used as
-# features for later labels, outputs remain in the original column order
+# explanatory variables for later labels, outputs remain in the original
+# column order
 fit_lo <- ccn(x = data$X, y = data$Y, q = 1, lambda = 0.01,
               label_order = c(4, 1, 3, 2))
 fit_lo

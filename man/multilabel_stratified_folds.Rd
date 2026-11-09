@@ -7,14 +7,15 @@
 multilabel_stratified_folds(y, folds = 5L, seed = NULL)
 }
 \arguments{
-\item{y}{A numeric matrix of binary responses (n x L), values in
-\code{{0, 1}}.}
+\item{y}{A numeric or logical matrix of binary responses (n x L),
+values in \code{{0, 1}}.}
 
-\item{folds}{Positive integer; number of folds. Default \code{5L}.}
+\item{folds}{Whole number of at least 2; number of folds. Default \code{5L}.}
 
 \item{seed}{Integer or \code{NULL}; random seed controlling the visiting
 order and the tie-breaking. \code{NULL} (default) uses the current random
-number stream.}
+number stream. A seed leaves the random number stream of the caller as it
+was.}
 }
 \value{
 An integer vector of length n assigning each observation to a fold

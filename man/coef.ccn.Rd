@@ -45,9 +45,9 @@ summary(fit, which = c("b", "C"))
 # variables (W), and coefficients of the label predictions (C)
 coef(fit)
 
-# Fitted classes and fitted probabilities
+# Fitted probabilities; predict() without newdata gives the fitted classes
 head(fitted(fit))
-head(fitted(fit, type = "response"))
+head(predict(fit))
 
 # Response residuals: y minus the fitted probabilities
 head(residuals(fit))

@@ -15,8 +15,8 @@
 #' A label that is constant contributes zero entropy, and conditioning on it
 #' leaves the entropy of the other label unchanged.
 #'
-#' @param y A numeric matrix of binary responses (n x L), values in
-#' \code{{0, 1}}.
+#' @param y A numeric or logical matrix of binary responses (n x L),
+#' values in \code{{0, 1}}.
 #'
 #' @return An L x L numeric matrix of conditional entropies in bits, with
 #' \code{dimnames} taken from the column names of \code{y}, or \code{L1} up to
@@ -34,10 +34,7 @@
 #' @export
 conditional_entropy_matrix <- function(y) {
     ## Input coercion and validation
-    y <- as.matrix(y)
-    if (!is.numeric(y))       stop("y must be numeric")
-    if (any(is.na(y)))        stop("y contains missing values")
-    if (!all(y %in% c(0, 1))) stop("y must contain only 0 and 1")
+    y <- .as_label_matrix(y)
 
     n  <- nrow(y)
     y0 <- 1 - y
@@ -56,6 +53,9 @@ conditional_entropy_matrix <- function(y) {
     result <- .entropy_term(n11, n, p1) + .entropy_term(n10, n, p1) +
               .entropy_term(n01, n, 1 - p1) + .entropy_term(n00, n, 1 - p1)
     diag(result) <- 0
+
+    ## Rounding can leave an entropy a hair below zero
+    result <- pmax(result, 0)
 
     ## Fall back to the same default names that ccn() uses, so that the labels
     ## are identified consistently across the output of the package.
@@ -112,8 +112,8 @@ conditional_entropy_matrix <- function(y) {
 #' the observations it is given; see \code{\link{ccn_cv}} for cross-validating
 #' several rules against each other.
 #'
-#' @param y A numeric matrix of binary responses (n x L), values in
-#' \code{{0, 1}}.
+#' @param y A numeric or logical matrix of binary responses (n x L),
+#' values in \code{{0, 1}}.
 #' @param method Character; the ordering rule, one of \code{"cebcc1"} (default),
 #' \code{"cebcc2"}, \code{"cebcc3"}, \code{"cebcc4"}, or \code{"ebcc"}. See
 #' details.
@@ -137,10 +137,7 @@ entropy_label_order <- function(y, method = c("cebcc1", "cebcc2", "cebcc3",
     method <- match.arg(method)
 
     ## Input coercion and validation
-    y <- as.matrix(y)
-    if (!is.numeric(y))       stop("y must be numeric")
-    if (any(is.na(y)))        stop("y contains missing values")
-    if (!all(y %in% c(0, 1))) stop("y must contain only 0 and 1")
+    y <- .as_label_matrix(y)
 
     if (method == "ebcc") {
         ## Removing a label does not change the marginal entropy of any other,

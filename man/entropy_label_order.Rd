@@ -10,8 +10,8 @@ entropy_label_order(
 )
 }
 \arguments{
-\item{y}{A numeric matrix of binary responses (n x L), values in
-\code{{0, 1}}.}
+\item{y}{A numeric or logical matrix of binary responses (n x L),
+values in \code{{0, 1}}.}
 
 \item{method}{Character; the ordering rule, one of \code{"cebcc1"} (default),
 \code{"cebcc2"}, \code{"cebcc3"}, \code{"cebcc4"}, or \code{"ebcc"}. See

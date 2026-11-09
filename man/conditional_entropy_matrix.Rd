@@ -7,8 +7,8 @@
 conditional_entropy_matrix(y)
 }
 \arguments{
-\item{y}{A numeric matrix of binary responses (n x L), values in
-\code{{0, 1}}.}
+\item{y}{A numeric or logical matrix of binary responses (n x L),
+values in \code{{0, 1}}.}
 }
 \value{
 An L x L numeric matrix of conditional entropies in bits, with

@@ -1,8 +1,11 @@
 #' Predict from a Classifier Chain Network
 #'
 #' @param object A fitted \code{"ccn"} object.
-#' @param newdata Numeric matrix of predictors (n x m). If \code{NULL}, returns
-#' the fitted values from training.
+#' @param newdata Numeric matrix or data frame of explanatory variables
+#' (n x m). If \code{NULL}, returns the fitted values from training. Columns
+#' are matched by position. When both the training data and \code{newdata}
+#' have column names, these must be identical and in the same order. A vector
+#' is read as a single observation.
 #' @param type Character; the type of prediction. \code{"class"} (default)
 #' returns a binary 0/1 matrix. \code{"response"} returns predicted
 #' probabilities.
@@ -32,17 +35,37 @@ predict.ccn <- function(object, newdata = NULL, type = c("class", "response"),
 
     ## Return fitted values if no new data
     if (is.null(newdata)) {
-        probs <- object$fitted.probs
+        probs <- object$fitted.values
     } else {
+        ## A plain vector is one observation, its names are the column names
+        is_vector <- is.atomic(newdata) && is.null(dim(newdata))
+        if (is_vector)
+            newdata <- matrix(newdata, nrow = 1,
+                              dimnames = list(NULL, names(newdata)))
+
         ## Validate newdata
         newdata <- as.matrix(newdata)
         if (!is.numeric(newdata))
             stop("newdata must be numeric")
-        if (any(is.na(newdata)))
-            stop("newdata contains missing values")
+        if (!all(is.finite(newdata)))
+            stop("newdata contains missing or infinite values")
+
         if (ncol(newdata) != object$dims$m)
             stop("newdata has ", ncol(newdata), " columns but the model was ",
-                 "trained with ", object$dims$m, " predictors")
+                 "trained with ", object$dims$m, " explanatory variables",
+                 if (is_vector) paste0(". A vector is read as one ",
+                                       "observation; pass a one-column matrix ",
+                                       "for several observations of a single ",
+                                       "variable"))
+
+        ## Columns are used by position, so named columns must be in the
+        ## training order
+        trained <- object$variable_names
+        if (!is.null(trained) && !is.null(colnames(newdata)) &&
+            !identical(colnames(newdata), trained))
+            stop("the column names of newdata must match those used in ",
+                 "training, in the same order: ",
+                 paste(trained, collapse = ", "))
 
         ## Compute probabilities and restore original label order
         inv_order <- order(object$label_order)
@@ -72,8 +95,11 @@ predict.ccn <- function(object, newdata = NULL, type = c("class", "response"),
 #' Equivalent to calling \code{\link{predict.ccn}} on \code{object$best_model}.
 #'
 #' @param object A fitted \code{"ccn_cv"} object.
-#' @param newdata Numeric matrix of predictors (n x m). If \code{NULL}, returns
-#' the fitted values from training.
+#' @param newdata Numeric matrix or data frame of explanatory variables
+#' (n x m). If \code{NULL}, returns the fitted values from training. Columns
+#' are matched by position. When both the training data and \code{newdata}
+#' have column names, these must be identical and in the same order. A vector
+#' is read as a single observation.
 #' @param type Character; the type of prediction. \code{"class"} (default)
 #' returns a binary 0/1 matrix. \code{"response"} returns predicted
 #' probabilities.

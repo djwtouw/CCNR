@@ -4,23 +4,20 @@
 \alias{fitted.ccn_cv}
 \title{Extract Fitted Values from a Cross-validated Classifier Chain Network}
 \usage{
-\method{fitted}{ccn_cv}(object, type = c("class", "response"), ...)
+\method{fitted}{ccn_cv}(object, ...)
 }
 \arguments{
 \item{object}{A fitted \code{"ccn_cv"} object.}
 
-\item{type}{Character; \code{"class"} (default) returns binary predictions,
-\code{"response"} returns probabilities.}
-
 \item{...}{Further arguments passed to \code{\link{fitted.ccn}}.}
 }
 \value{
-An n x L matrix of fitted values in the original column order of
-\code{y}.
+An n x L matrix of fitted probabilities in the original column
+order of \code{y}.
 }
 \description{
-Extracts the fitted values of the best model selected by cross-validation,
-which is refitted on the full data. Equivalent to calling
+Extracts the fitted probabilities of the best model selected by
+cross-validation, which is refitted on the full data. Equivalent to calling
 \code{\link{fitted.ccn}} on \code{object$best_model}.
 }
 \examples{
@@ -41,9 +38,10 @@ cv$best_model
 head(predict(cv, newdata = data$X))
 head(predict(cv, newdata = data$X, type = "response"))
 
-# Coefficients and fitted values of the best model
+# Coefficients, fitted probabilities and residuals of the best model
 coef(cv)
 head(fitted(cv))
+head(residuals(cv))
 
 # Use a different built-in scoring function for hyperparameter selection
 cv_f1 <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),

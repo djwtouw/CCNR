@@ -37,9 +37,10 @@ cv$best_model
 head(predict(cv, newdata = data$X))
 head(predict(cv, newdata = data$X, type = "response"))
 
-# Coefficients and fitted values of the best model
+# Coefficients, fitted probabilities and residuals of the best model
 coef(cv)
 head(fitted(cv))
+head(residuals(cv))
 
 # Use a different built-in scoring function for hyperparameter selection
 cv_f1 <- ccn_cv(x = data$X, y = data$Y, q = c(1, 2), lambda = c(0.01, 0.1),
