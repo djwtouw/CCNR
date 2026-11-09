@@ -240,6 +240,22 @@ test_that("a permuted chain does not permute the output columns", {
   expect_equal(dim(predict(fit, newdata = data$X)), dim(data$Y))
 })
 
+test_that("a label order gives the same fit as permuting the columns of y", {
+  # Both fits run the same chain, so their probabilities agree once the output
+  # of the first is put in chain order
+  set.seed(35)
+  data <- generate_dataset(n = 150)
+  o    <- c(4L, 1L, 3L, 2L)
+
+  fit_order <- ccn(data$X, data$Y, q = 1, lambda = 0.01, label_order = o)
+  fit_perm  <- ccn(data$X, data$Y[, o], q = 1, lambda = 0.01)
+
+  expect_equal(unname(fitted(fit_order)[, o]), unname(fitted(fit_perm)))
+  expect_equal(unname(predict(fit_order, newdata = data$X,
+                              type = "response")[, o]),
+               unname(predict(fit_perm, newdata = data$X, type = "response")))
+})
+
 
 # -- ccn_cv over candidate orders -------------------------------------------
 

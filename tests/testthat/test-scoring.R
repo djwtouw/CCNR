@@ -105,12 +105,12 @@ test_that("mean_auc is in [0, 1]", {
   expect_lte(score, 1)
 })
 
-test_that("mean_auc handles a constant label column gracefully (returns NA for that label)", {
-  y_const <- y_true; y_const[, 1] <- 1L   # column 1 all ones, AUC undefined
+test_that("mean_auc skips a constant label column", {
+  # Column 1 is all ones, so its AUC is undefined. Column 2 is ranked
+  # perfectly, so the mean over the remaining labels is exactly 1.
+  y_const <- y_true; y_const[, 1] <- 1L
   score <- ccn_mean_auc(y_const, y_prob_good)
-  expect_true(is.finite(score))            # mean over remaining labels
-  expect_gte(score, 0)
-  expect_lte(score, 1)
+  expect_equal(score, 1)
 })
 
 # ---- Scoring interface -------------------------------------------------
